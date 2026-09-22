@@ -51,13 +51,20 @@ static void set_msg(const char *fmt, ...) {
 // ===========================================================================
 // 极简 HTTP GET：把整个响应读进 out（只用于 /fw/version 这种小文本）
 // ===========================================================================
-static int http_get_body(const char *url, char *out, size_t cap, int timeout_ms) {
+// ★ 这里收的是 path（"/fw/version"）而不是完整 URL —— 与 MQTT 那个坑同源：
+//   域名里带下划线（cw_station.bubblegear.xyz）时，esp_http_client 的 URL 解析器
+//   直接报 "Error parse url"，整条 OTA 通道就废了。拆成 host + path 给它就绕开了
+//   那一步解析，底下照样是 getaddrinfo。
+static int http_get_body(const char *path, char *out, size_t cap, int timeout_ms) {
     esp_http_client_config_t cfg = {
-        .url = url,
+        .host = cw_prov_server_addr(),
+        .port = CW_FW_PORT,
+        .path = path,
         .timeout_ms = timeout_ms,
         .keep_alive_enable = false,
     };
 #if CONFIG_CW_TLS
+    cfg.transport_type = HTTP_TRANSPORT_OVER_SSL;
     cfg.cert_pem = CW_ROOT_CA_PEM;
 #endif
     esp_http_client_handle_t h = esp_http_client_init(&cfg);
@@ -84,7 +91,7 @@ static int http_get_body(const char *url, char *out, size_t cap, int timeout_ms)
     esp_http_client_close(h);
     esp_http_client_cleanup(h);
     out[got] = '\0';
-    ESP_LOGI(TAG, "GET %s -> %d (%u B)", url, status, (unsigned)got);
+    ESP_LOGI(TAG, "GET %s -> %d (%u B)", path, status, (unsigned)got);
     return status == 200 ? (int)got : -1;
 }
 
@@ -138,7 +145,7 @@ bool cw_ota_ver_newer(const char *a, const char *b) {
 // ===========================================================================
 // 下载并写入 OTA 槽
 // ===========================================================================
-static bool ota_download(const char *url, uint32_t expect) {
+static bool ota_download(const char *path, uint32_t expect) {
     // 目标槽：驱动自己会挑"不是当前这个"的那个。
     const esp_partition_t *part = esp_ota_get_next_update_partition(NULL);
     if (!part) { set_msg("NO OTA SLOT"); return false; }
@@ -151,11 +158,14 @@ static bool ota_download(const char *url, uint32_t expect) {
     if (e != ESP_OK) { set_msg("OTA BEGIN FAIL %d", e); return false; }
 
     esp_http_client_config_t cfg = {
-        .url = url,
+        .host = cw_prov_server_addr(),
+        .port = CW_FW_PORT,
+        .path = path,
         .timeout_ms = 30000,        // 局域网 1.5 MB 很快，但公网 TLS 握手就得算进去
         .keep_alive_enable = false,
     };
 #if CONFIG_CW_TLS
+    cfg.transport_type = HTTP_TRANSPORT_OVER_SSL;
     cfg.cert_pem = CW_ROOT_CA_PEM;  // 验证服务器是真站：拉的是马上要烧进 Flash 的镜像
 #endif
     esp_http_client_handle_t h = esp_http_client_init(&cfg);
@@ -231,11 +241,9 @@ static void ota_task(void *arg) {
         s_state = CW_OTA_ERR;
         goto done;
     }
-    char url[160];          // https://<域名>/fw/cw.bin：域名最长 64，别再按 128 估得太紧
-    snprintf(url, sizeof(url), "%s://%s:%d/fw/version", CW_FW_SCHEME, srv, CW_FW_PORT);
-
+    // 只传 path：host 与端口由 http_get_body / ota_download 自己填（见那两处的注释）。
     char body[256];
-    if (http_get_body(url, body, sizeof(body), 8000) <= 0) {
+    if (http_get_body("/fw/version", body, sizeof(body), 8000) <= 0) {
         set_msg("SERVER UNREACHABLE");
         s_state = CW_OTA_ERR;
         goto done;
@@ -257,8 +265,7 @@ static void ota_task(void *arg) {
         goto done;
     }
 
-    snprintf(url, sizeof(url), "%s://%s:%d/fw/cw.bin", CW_FW_SCHEME, srv, CW_FW_PORT);
-    if (ota_download(url, s_newsize)) {
+    if (ota_download("/fw/cw.bin", s_newsize)) {
         s_pct = 100;
         set_msg("DONE - REBOOTING");
         s_state = CW_OTA_OK;

@@ -2,10 +2,10 @@
 
 这篇讲的是**把 didaaa-server 放到公网、让别人也能用**时的布线。目标只有一个：
 
-> 设备上只填一个域名 `station.didaaa.bubblegear.xyz`（或任何人提供的域名），
+> 设备上只填一个域名 `cw_station.bubblegear.xyz`（或任何人提供的域名），
 > 键控、信令、固件升级三条通路自己就都上了，不需要分别配 IP 和端口。
 
-下面所有步骤都用上面这个域名做例子，把 `station.didaaa.bubblegear.xyz` 换成你自己的即可。
+下面所有步骤都用上面这个域名做例子，把 `cw_station.bubblegear.xyz` 换成你自己的即可。
 
 ---
 
@@ -33,7 +33,7 @@ MQTT 是 TCP + QoS，丢一个包要重传，等它到的时候播放时刻早�
 一条 A 记录就够，不需要 SRV、不需要 CNAME 花活：
 
 ```text
-station.didaaa.bubblegear.xyz.    A    <你的服务器公网 IP>
+cw_station.bubblegear.xyz.    A    <你的服务器公网 IP>
 ```
 
 固件**只用这一条记录**：UDP / MQTT / 固件下载三个地址都由它派生（见第五节）。换服务器、
@@ -46,7 +46,7 @@ station.didaaa.bubblegear.xyz.    A    <你的服务器公网 IP>
 ```bash
 sudo apt install certbot
 sudo certbot certonly --standalone \
-    -d station.didaaa.bubblegear.xyz \
+    -d cw_station.bubblegear.xyz \
     --key-type ecdsa --elliptic-curve secp256r1 \
     --agree-to-nos-mail -m you@example.com
 ```
@@ -93,8 +93,8 @@ curl -sS -O https://letsencrypt.org/certs/isrgrootx2.pem
 cat isrgrootx1.pem isrgrootx2.pem > main/root_ca.pem
 
 # ② 从你自己那条链反推 —— 这一步是「确认」，而不是「下载」
-openssl s_client -connect station.didaaa.bubblegear.xyz:443 \
-                 -servername station.didaaa.bubblegear.xyz </dev/null 2>/dev/null \
+openssl s_client -connect cw_station.bubblegear.xyz:443 \
+                 -servername cw_station.bubblegear.xyz </dev/null 2>/dev/null \
   | openssl x509 -noout -issuer
 #   → issuer=C = US, O = Internet Security Research Group, CN = R11
 ```
@@ -123,16 +123,16 @@ CA 官网（第 ① 条）或者系统信任库里取。
 ```nginx
 server {
     listen 80;
-    server_name station.didaaa.bubblegear.xyz;
+    server_name cw_station.bubblegear.xyz;
     return 301 https://$host$request_uri;      # HTTP 一律跳 HTTPS
 }
 
 server {
     listen 443 ssl http2;
-    server_name station.didaaa.bubblegear.xyz;
+    server_name cw_station.bubblegear.xyz;
 
-    ssl_certificate     /etc/letsencrypt/live/station.didaaa.bubblegear.xyz/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/station.didaaa.bubblegear.xyz/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/cw_station.bubblegear.xyz/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/cw_station.bubblegear.xyz/privkey.pem;
     ssl_protocols       TLSv1.2 TLSv1.3;
     # 只留两条 AEAD 套件：C3 上有硬件 AES/SHA 加速，这两个跑得动
     ssl_ciphers         ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-ECDSA-CHACHA20-POLY1305;
@@ -173,8 +173,8 @@ upstream cw_mqtt { server 127.0.0.1:1883; }
 
 server {
     listen 8883 ssl;
-    ssl_certificate     /etc/letsencrypt/live/station.didaaa.bubblegear.xyz/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/station.didaaa.bubblegear.xyz/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/cw_station.bubblegear.xyz/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/cw_station.bubblegear.xyz/privkey.pem;
     ssl_protocols       TLSv1.2 TLSv1.3;
     ssl_session_cache   shared:cwmqtt:1m;
 
@@ -215,7 +215,7 @@ grep -rh "ssl_certificate" /opt/1panel/apps/openresty/openresty/conf/ 2>/dev/nul
 
 **第二步：建反向代理站点。**
 
-1Panel → 网站 → 创建网站 → 类型选**反向代理** → 主域名 `station.didaaa.bubblegear.xyz`
+1Panel → 网站 → 创建网站 → 类型选**反向代理** → 主域名 `cw_station.bubblegear.xyz`
 → 代理地址 `http://127.0.0.1:21301` → 创建。然后在该站点的 HTTPS 页里申请证书
 （Let's Encrypt / 已有证书都行），建议开强制 HTTPS。
 
@@ -405,7 +405,7 @@ CW 点划本身不是秘密（本来就要被所有人听到），真正要防�
 菜单 → `BASE STATION` → `CHANGE`，填：
 
 ```text
-station.didaaa.bubblegear.xyz
+cw_station.bubblegear.xyz
 ```
 
 固件会把它分派到三条通路（代码：`main/cw_net.h` 的 `CW_MQTT_SCHEME` / `CW_FW_SCHEME`）：
@@ -456,14 +456,14 @@ idf.py build
 
 ```bash
 # 1) DNS 指向对不对
-dig +short station.didaaa.bubblegear.xyz
+dig +short cw_station.bubblegear.xyz
 
 # 2) HTTPS：链条能不能接到内置的根
-curl -v https://station.didaaa.bubblegear.xyz/fw/version
+curl -v https://cw_station.bubblegear.xyz/fw/version
 #      期望：200 + 返回 version.json 的 JSON
 
 # 3) MQTTS：用同一个根证书做 clinet 校验
-openssl s_client -connect station.didaaa.bubblegear.xyz:8883 -CAfile didaaa/main/root_ca.pem -brief </dev/null
+openssl s_client -connect cw_station.bubblegear.xyz:8883 -CAfile didaaa/main/root_ca.pem -brief </dev/null
 #      期望：Verification: OK
 
 # 4) 明文端口是不是真的收回去了（公网 IP 上扫）

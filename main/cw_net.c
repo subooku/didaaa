@@ -78,7 +78,7 @@ static char     s_ham[CW_CALL_LEN + 1];               // 用户自定义真实�
 static char     s_vcall[CW_CALL_LEN + 1];             // 服务器下发虚拟呼号，空 = 还没拿到
 static bool     s_authed;                             // Global UID 认证通过了吗
 // 服务器地址与 MQTT 地址：配网页里填的优先，没填就用 Kconfig 编译值兜底。
-// ★ 这一栏可以是 IP（192.168.1.10）也可以是域名（station.didaaa.bubblegear.xyz）——
+// ★ 这一栏可以是 IP（192.168.1.10）也可以是域名（cw_station.bubblegear.xyz）——
 //   域名让"换服务器只要改一个字符串"成为可能，也让 OTA 后还能换机房而不用重烧。
 //   64 字节跟着 CW_PROV_SRV_MAX，别再写小：长域名会被 snprintf 悄悄截断，
 //   截出来的字符串还是个合法域名，只是解析失败，很难从现象反推。
@@ -346,7 +346,7 @@ static void mqtt_event_handler(void *arg, esp_event_base_t base, int32_t id, voi
 }
 
 // MQTT 地址也由那一个 host 派生：scheme 与端口跟着 CW_TLS 走（常量见 cw_net.h）。
-// 域名可以直接写进 uri —— esp-mqtt 内部会做地址解析，不需要我们事先换成 IP。
+// s_mqtt_uri 现在只用来打日志（见 mqtt_start），不再喂给 esp-mqtt —— 原因见下面那段。
 static void build_mqtt_uri(void) {
     snprintf(s_mqtt_uri, sizeof(s_mqtt_uri), "%s://%s:%d",
              CW_MQTT_SCHEME, s_srv_host, CW_MQTT_PORT);
@@ -356,8 +356,15 @@ static void mqtt_start(void) {
     char lwt_topic[64];
     snprintf(lwt_topic, sizeof(lwt_topic), "cw/v1/sta/%s/presence", s_call);
 
+    // ★ 这里填 hostname + port，而不是拼好的 URI —— 踩过的坑：
+    //   域名里带下划线（cw_station.bubblegear.xyz）时，esp-mqtt 的 URI 解析器直接报
+    //   "Error parse uri (1)" 并让 esp_mqtt_client_init 返回 NULL，整个信令通道就没了。
+    //   而 UDP 那一路走 getaddrinfo 是容忍下划线的，于是出现"认证通过但永远 OFFLINE"的怪象。
+    //   直接给 hostname 就绕开了 URI 解析这一步，底下照样是 getaddrinfo。
+    //   （下划线主机名本身不合规：RFC 1123 只允许字母、数字和连字符，建议域名改用连字符。）
     esp_mqtt_client_config_t cfg = {
-        .broker.address.uri = s_mqtt_uri,
+        .broker.address.hostname = s_srv_host,
+        .broker.address.port     = CW_MQTT_PORT,
         .credentials.client_id = s_call,
         // 掉电/断网时由 broker 代发：别人的名单里立刻看不到我。
         .session.last_will.topic = lwt_topic,
@@ -371,10 +378,13 @@ static void mqtt_start(void) {
 #if CONFIG_CW_TLS
     // ★ 校验证书这一步不能图省事跳过：不校验的 TLS 只加密、不认服务器是谁，
     //   中间人拿一张自签证书就能冒充 broker。那比明文更糟 —— 明文至少一眼看得出来。
+    cfg.broker.address.transport = MQTT_TRANSPORT_OVER_SSL;
     cfg.broker.verification.certificate = CW_ROOT_CA_PEM;
+#else
+    cfg.broker.address.transport = MQTT_TRANSPORT_OVER_TCP;
 #endif
     s_mqtt = esp_mqtt_client_init(&cfg);
-    if (!s_mqtt) { ESP_LOGE(TAG, "MQTT 客户端创建失败"); return; }
+    if (!s_mqtt) { ESP_LOGE(TAG, "MQTT 客户端创建失败（uri=%s）", s_mqtt_uri); return; }
     esp_mqtt_client_register_event(s_mqtt, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
     esp_mqtt_client_start(s_mqtt);
 }

@@ -10,12 +10,15 @@
 //   不用手写两遍）。
 // ★ OTA 只看"服务端版本 > 本机版本"，所以每次发版都必须抬版本号，否则服务端相同
 //   版本会被判定"无需升级"直接跳过。历史：1.1.7 → 1.1.8（本轮新端口）。
-// ★ 1.1.9：UDP 6000→21303、OTA 端口 8080→21301。因为老固件把端口写死在二进制里，
-//   服务端换端口后老设备连不上、也拿不到新固件，无法 OTA 自救 —— 这一版必须串口烧录，
-//   之后服务端升级再走 OTA 即可。
+// ★ 1.1.9：UDP 6000→21306、OTA 端口 8080→21301。因为老固件把端口写死在二进制里，
+//   服务端换端口后老设备连不上、也拿不到新固件，无法 OTA 自救 —— 那一版只能串口烧录。
+// ★ 1.1.10：UDP 21306→21303（与服务端对齐）。
+//   ⚠ 端口必须改 sdkconfig 里的 CONFIG_CW_UDP_PORT —— 只改 Kconfig.projbuild 的 default
+//   不生效：sdkconfig 里已有该键时 default 会被忽略。本版之前就栽在这里（default 写了
+//   21303，编进固件的还是 21306，设备一直连不上）。改完看 build/config/sdkconfig.h 复核。
 //   改完记得两条：① 重新 idf.py build；② 把 build/*.bin 发布到服务器的 /fw/ 下
 //   （tools/publish-fw.sh 会顺便更新 version.json）。
-#define CW_FW_VERSION "1.1.9"
+#define CW_FW_VERSION "1.1.10"
 
 void cw_radio_enter(void);
 void cw_radio_exit(void);

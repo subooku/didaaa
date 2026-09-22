@@ -14,7 +14,7 @@ menu "CW Radio"
         string "CW server address (IP or domain)"
         default "192.168.1.10"
         help
-            CW 服务器的地址。IP（192.168.1.10）和域名（station.didaaa.bubblegear.xyz）
+            CW 服务器的地址。IP（192.168.1.10）和域名（cw_station.bubblegear.xyz）
             都可以 —— UDP 那一跳会先按 IP 试，不是 IP 才走 DNS 解析。
             用域名的话换机房 / 换别人的服务器都不用重烧固件，配网页里改一格就行。
             三个端口都从这一个 host 派生（UDP 21303 / MQTT 1883 或 8883 / 固件 21301 或 443）。

@@ -353,7 +353,7 @@ curl localhost:21301/who           # 看谁在线
 
 要让别人也能用你的服务器，把服务端放到公网并套上域名 + TLS。设备侧只需要改一格：
 
-菜单 → `BASE STATION` → `CHANGE` → 填域名（例如 `station.didaaa.bubblegear.xyz`）
+菜单 → `BASE STATION` → `CHANGE` → 填域名（例如 `cw_station.bubblegear.xyz`）
 
 UDP 键控、MQTT 信令、固件下载三条通路的端口都由它派生；打开 `CW_TLS` 后 MQTT 与固件下载
 自动切到 `mqtts://域名:8883` 与 `https://域名/fw/cw.bin`。完整的 nginx 反代配置、证书签发

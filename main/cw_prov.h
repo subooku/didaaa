@@ -20,7 +20,7 @@
 
 #define CW_PROV_SSID_MAX 33
 #define CW_PROV_PASS_MAX 65
-// 64 而不是 40：这一栏现在要放域名（station.didaaa.bubblegear.xyz 就有 29 个字符），
+// 64 而不是 40：这一栏现在要放域名（cw_station.bubblegear.xyz 就有 29 个字符），
 // 别人自建服务器的域名可能更长。DNS 名字理论上能到 253，但我们只用它连一台服务器，
 // 64 足够，再长就挤爆配网页的输入框和 ABOUT 那一行的排版了。
 #define CW_PROV_SRV_MAX  64
