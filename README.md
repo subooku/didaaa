@@ -32,6 +32,11 @@
 
 它不是一个聊天群里的摩尔斯表情符号，而是一台有 VFO、有频谱、有 S 表、有呼号的电台。
 
+<p align="center">
+  <img src="assets/ui-main-screen.svg" width="680" alt="DiDaaa 主屏界面导览：呼号/电量、频率+SPAN、音调+S 表、频谱、RX/TX、同频名单、网络状态、在线边框">
+</p>
+
+<!-- 
 ```
        ┌──────────────────────────┐
        │  DiDaaa · 7.024.200      │  ← 你的频率（40 m 虚拟频段）
@@ -40,7 +45,7 @@
        │  RX  CQ CQ DE BH1ABC     │  ← 对方发来的、正在解码的内容
        │  TX  CQ CQ DE VUMM5A     │  ← 你正在发的
        └──────────────────────────┘
-```
+``` -->
 
 ---
 
@@ -109,32 +114,9 @@
   <img src="assets/keys-online-offline.svg" width="680" alt="在线 / 离线 / 菜单三种状态切换：UP+DOWN 切在线离线，长按 OK 进出菜单，在线时长按 OK 进不了菜单">
 </p>
 
-### 菜单 / 参数页
 
-<p align="center">
-  <img src="assets/keys-menu.svg" width="680" alt="菜单页按键功能：UP/DOWN 移动与增减，短按 OK 进入确认，长按 OK 返回上一级">
-</p>
 
-| 操作 | 效果 |
-|---|---|
-| **UP / DOWN** | 上下移动选中项；进入某一项后则是增减数值 |
-| **短按 OK** | 进入该项 / 确认保存并返回菜单 |
-| **长按 OK 2 秒** | 返回上一级（这条**任何时候都有效**，进得去必定出得来） |
-
-### 通用
-
-- **屏幕熄着时第一次按键只点亮屏幕**，不进菜单、不改参数、不发报。摸黑按一下本意是"看清屏幕"，顺手把 REBOOT 触发了代价太大。
-- **按键抖动不用担心**：15 ms 硬件消抖 + 电压档迟滞判档，磨损的锅仔片也不会连出两个点。
-
----
-
-## 界面导览
-
-### 主屏
-
-<p align="center">
-  <img src="assets/ui-main-screen.svg" width="680" alt="DiDaaa 主屏界面导览：呼号/电量、频率+SPAN、音调+S 表、频谱、RX/TX、同频名单、网络状态、在线边框">
-</p>
+#### SPAN5K 说明
 
 关于频谱那一行 **`SPAN 5k`**：它是整屏横向覆盖的频率宽度，跟着步进自动缩 —— 步进越小看得越细。按一下 UP 在屏幕上的位移始终保持在 2～11 px，不会出现"按了没反应"或"一按飞出屏"。
 
@@ -145,7 +127,14 @@
 | 100 Hz | **5 kHz** | 22 Hz | 4.5 px |
 | 10 Hz | 1 kHz | 4.4 Hz | 2.3 px |
 
-### 菜单树
+
+### 菜单 / 参数页
+
+<p align="center">
+  <img src="assets/keys-menu.svg" width="680" alt="菜单页按键功能：UP/DOWN 移动与增减，短按 OK 进入确认，长按 OK 返回上一级">
+</p>
+
+#### 菜单树
 
 ```
 SETTINGS
@@ -164,7 +153,21 @@ SETTINGS
 └─ ABOUT ME         设备 ID / 固件版本 / MAC
 ```
 
+
+| 操作 | 效果 |
+|---|---|
+| **UP / DOWN** | 上下移动选中项；进入某一项后则是增减数值 |
+| **短按 OK** | 进入该项 / 确认保存并返回菜单 |
+| **长按 OK 2 秒** | 返回上一级（这条**任何时候都有效**，进得去必定出得来） |
+
+### 通用
+
+- **屏幕熄着时第一次按键只点亮屏幕**，不进菜单、不改参数、不发报。摸黑按一下本意是"看清屏幕"，顺手把 REBOOT 触发了代价太大。
+- **按键抖动不用担心**：15 ms 硬件消抖 + 电压档迟滞判档，磨损的锅仔片也不会连出两个点。
+
+
 ---
+
 
 ## 通联规则
 
@@ -419,7 +422,7 @@ cc -std=c11 -Wall -Wextra -Werror -Imain tests/test_cw_proto.c main/cw_proto.c -
 ## 许可 & 致谢
 
 - 许可证：**MIT**（见 `LICENSE`）
-- 硬件/基础 BSP 来自 [FoloToy AI Passport](https://github.com/FoloToy) 项目，其 `docs/` 与 `components/bsp/` 一并保留以志谢。
+- 硬件/基础 BSP 来自 [FoloToy AI Passport](https://github.com/FoloToy) 项目，其 `docs/` 与 `components/bsp/` 一并保留以致谢。
 - UI 用 [LVGL](https://lvgl.io/)，网络依赖 [esp-mqtt](https://components.espressif.com/components/espressif/mqtt)、[espressif/button](https://components.espressif.com/components/espressif/button) 等组件。
 
 73 & GL 📻
