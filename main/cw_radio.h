@@ -8,7 +8,7 @@
 // 固件版本号，ABOUT ME 与 FIRMWARE 两页显示，OTA 时也用它跟服务器上的版本比对。
 // ★ 发新版时改这一处（tools/publish-fw.sh 会从这里抓版本号写进 version.json，
 //   不用手写两遍）。
-#define CW_FW_VERSION "1.1.3"
+#define CW_FW_VERSION "1.1.6"
 
 void cw_radio_enter(void);
 void cw_radio_exit(void);

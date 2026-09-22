@@ -468,7 +468,7 @@ static lv_obj_t *s_adj_list[ADJ_LIST_MAX], *s_adj_list_lbl[ADJ_LIST_MAX];
 // 头文件（233 KB 塞在 flash 里）。现在用文字标签，改起来只是改字符串。
 // 两段：DEVICE（设备信息）+ AUTHOR（作者信息），每段一个琥珀小标题 + 若干"键/值"行。
 // 键左对齐、值右对齐，用两个标签而不是拼一行字符串 —— 比例字体下拼空格对不齐。
-#define ABOUT_ROWS 8            // 3 行设备信息 + 5 行作者信息
+#define ABOUT_ROWS 7            // 3 行设备信息 + 4 行作者信息（最后一行占两行高）
 #define ABOUT_KEY_W 76          // "Device ID" 是 9 个字符，76px 足够
 #define ABOUT_VAL_X (ABOUT_KEY_W + 4)
 #define ABOUT_VAL_W (CONTENT_W - ABOUT_VAL_X)
@@ -1074,8 +1074,10 @@ static void build_adj(void) {
         s_about_key[i] = k;
         lv_obj_t *v = lv_label_create(s_about);
         lv_obj_set_pos(v, ABOUT_VAL_X, y);
-        // Web 那一行的网址比取值列（132px）宽，折成两行显示；其余行都是单行。
-        lv_obj_set_size(v, ABOUT_VAL_W, (i == ABOUT_ROWS - 1) ? 36 : 18);
+        // Web 那一行的网址有 200px，比取值列（132px）宽，要占两行；其余行都是单行。
+        // ★ 高 40：montserrat_14 的 line_height 是 16，两行 32px，
+        //   原来给 36 只够单行再宽一点，两行贴着边容易裁掉下沿，这里留足。
+        lv_obj_set_size(v, ABOUT_VAL_W, (i == ABOUT_ROWS - 1) ? 40 : 18);
         lv_obj_set_style_text_font(v, &lv_font_montserrat_14, 0);
         lv_obj_set_style_text_color(v, lv_color_hex(0xE4F1FF), 0);
         lv_obj_set_style_text_align(v, LV_TEXT_ALIGN_RIGHT, 0);
@@ -1436,13 +1438,13 @@ static void refresh_adj(void) {
         for (; idx < STEP_N; idx++) if (STEP_OPTS[idx] == S.step) break;
         if (idx >= STEP_N) idx = 1;                 // 存了个不在表里的值就落在 100 Hz
         adj_list_show(items, STEP_N, idx);
-        lv_label_set_text(s_adj_note, "VFO step per press. Span follows.\nUP/DN pick, OK save.");
+        lv_label_set_text(s_adj_note, "VFO step per press. Span follows.");
         break;
     }
     case ADJ_BL:
         snprintf(v, sizeof(v), "%d%%", S.bl);
         pct = S.bl;
-        lv_label_set_text(s_adj_note, "Screen brightness. The backlight is\nPWM on GPIO21, 10..100%.");
+        lv_label_set_text(s_adj_note, "Screen brightness.");
         break;
     case ADJ_BL_TO: {
         static const char *const items[BL_TO_N] = { "10 s", "30 s", "60 s", "ON" };
@@ -1540,7 +1542,7 @@ static void refresh_adj(void) {
         // ★ 不再单列 Global UID：它就是设备 ID，两个名字一个东西，
         //   摆两行除了让人怀疑"我到底有几个 ID"之外没有别的用处。
         static const char *const ak[ABOUT_ROWS] = { "Device ID", "Firmware", "MAC",
-                                                    "Creator", "QQ", "WeChat", "Group", "Web" };
+                                                    "Creator", "QQ", "QQ Group", "Web" };
         char av[ABOUT_ROWS][40];
         // 设备 ID = MAC 的完整 48 位（12 位十六进制），服务端就是拿它绑定虚拟呼号的。
         snprintf(av[0], sizeof(av[0]), "%s", cw_net_device_id_hex());
@@ -1548,11 +1550,13 @@ static void refresh_adj(void) {
         snprintf(av[2], sizeof(av[2]), "%s", cw_net_mac_str());
         snprintf(av[3], sizeof(av[3]), "ZGF");
         snprintf(av[4], sizeof(av[4]), "1422361371");
-        snprintf(av[5], sizeof(av[5]), "xxxxx");
-        snprintf(av[6], sizeof(av[6]), "1098596164");
-        // 完整仓库地址。取值列只有 132px，一行放不下，按语义断成两行
-        // （域名一行、仓库名一行），比让 LVGL 从单词中间断开好认。
-        snprintf(av[7], sizeof(av[7]), "github.com/zgfbupt\ndidaaa");
+        snprintf(av[5], sizeof(av[5]), "1098596164");
+        // 完整仓库地址。★ 整串在 montserrat_14 下有 200px，取值列只有 132px，
+        //   一行必然放不下；而它中间没有空格，交给 LVGL 折行会按字符硬断，
+        //   断在哪儿全看宽度，看上去就是"网址被截掉了一截"。
+        //   所以这里写死换行点：域名一行（88px）、仓库名一行（112px），
+        //   两行都在 132px 以内，第一行末尾留个 / 表明下一行还是同一串。
+        snprintf(av[6], sizeof(av[6]), "github.com/\nsubooku/didaaa");
         for (int i = 0; i < ABOUT_ROWS; i++) {
             if (s_about_key[i]) lv_label_set_text(s_about_key[i], ak[i]);
             if (s_about_val[i]) lv_label_set_text(s_about_val[i], av[i]);
