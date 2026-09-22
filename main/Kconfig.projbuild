@@ -1,0 +1,46 @@
+menu "CW Radio"
+
+    config CW_WIFI_SSID
+        string "Wi-Fi SSID"
+        default "myssid"
+        help
+            CW 电台要连的 2.4G Wi-Fi 名称。留空或连不上时，页面状态行会显示 NET FAIL。
+
+    config CW_WIFI_PASSWORD
+        string "Wi-Fi password"
+        default "mypassword"
+
+    config CW_SERVER_IP
+        string "CW server IP (UDP keying)"
+        default "192.168.1.10"
+        help
+            运行 cw-server/server.js 的主机地址。键控走 UDP，填 IP 不填域名。
+
+    config CW_UDP_PORT
+        int "CW server UDP port"
+        range 1 65535
+        default 6000
+
+    config CW_MQTT_URI
+        string "MQTT broker URI (signalling)"
+        default "mqtt://192.168.1.10:1883"
+        help
+            信令通道：presence（含 LWT 遗嘱）、台站名单、频道占用表、对时、短报文。
+            设备端用 TCP 直连最省内存；浏览器需要时服务端可同时开 ws:// 端口。
+
+    config CW_FW_PORT
+        int "Firmware OTA HTTP port"
+        range 1 65535
+        default 8080
+        help
+            固件的 HTTP 下载端口，即 cw-server/server.js 的 PORT。设备从
+            http://<CW_SERVER_IP>:<CW_FW_PORT>/fw/version 取版本、从
+            /fw/cw.bin 取镜像。走明文 HTTP：局域网内够用，公网请另加签名校验。
+
+    config CW_CALLSIGN
+        string "Callsign"
+        default "BH1ABC"
+        help
+            最多 8 个字符，只允许字母和数字。不足 3 位时用 MAC 尾段生成 NXXXX。
+
+endmenu

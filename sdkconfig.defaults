@@ -1,0 +1,66 @@
+# --- 目标芯片 ---
+CONFIG_IDF_TARGET="esp32c3"
+# 注:ESP32-C3 无 PSRAM,故不设 CONFIG_SPIRAM。
+
+# --- Flash ---
+# FoloToy AI Passport 当前产品/固件基线使用 8MB Flash。
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+# 固定 8MB 镜像头，关闭 detect，便于 idf.py merge-bin。
+CONFIG_ESPTOOLPY_HEADER_FLASHSIZE_UPDATE=n
+# 默认模板只保留 NVS、PHY data 和占用剩余空间的 factory app；用户可按需修改。
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+CONFIG_PARTITION_TABLE_FILENAME="partitions.csv"
+
+# --- 控制台:USB-Serial-JTAG(C3 原生 USB,GPIO18/19)---
+# 不用 UART0:其默认 TX=GPIO21 与本板背光引脚冲突。
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+CONFIG_ESP_CONSOLE_SECONDARY_NONE=y
+
+# --- LVGL ---
+CONFIG_LV_COLOR_DEPTH_16=y
+CONFIG_LV_FONT_MONTSERRAT_14=y
+CONFIG_LV_FONT_MONTSERRAT_16=y
+CONFIG_LV_FONT_MONTSERRAT_20=y
+# LVGL 内置 malloc 池大小(KB)。它是独立静态区、不与系统堆共享,配大了会白白占用 RAM。
+# 本 demo UI 简单,24KB 足够;若自建复杂界面出现绘制卡死/看门狗,调大此值。
+CONFIG_LV_MEM_SIZE_KILOBYTES=24
+
+# --- 系统 ---
+CONFIG_FREERTOS_HZ=1000
+
+# --- OTA 回滚（与 partitions.csv 的双槽配套）---
+# 新固件首次启动处于"待确认"态，程序跑起来后自己调
+# esp_ota_mark_app_valid_cancel_rollback() 确认；确认前重启会自动弹回上一槽。
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
+
+# --- I2S 中断 IRAM 安全（并发播放不出杂音的前提）---
+# 写 NVS / 擦 Flash 时 cache 会被关掉,那时跑在 Flash 上的中断进不来,
+# I2S 的 GDMA 中断一旦被延后,DMA 里的 PCM 放完就断 —— 喇叭"啪"一声。
+# 打开这一项,I2S ISR 与它调用的 GDMA 处理函数进 IRAM,DMA 缓冲区本来就分配在
+# 内部 DRAM,于是"写 Flash + 放音"可以并行。
+# ★ 本工程没有注册任何 I2S 事件回调,故不牵扯"回调及其调用链也要 IRAM 安全"。
+# ★ 只改本文件不会覆盖已有的 sdkconfig,改完必须核对生成物里的实际取值。
+CONFIG_I2S_ISR_IRAM_SAFE=y
+CONFIG_GDMA_ISR_HANDLER_IN_IRAM=y
+
+# --- 按键消抖（iot_button 组件）---
+# 组件每 5ms 采一次，要求连续 N tick 读到同一电平才翻状态，消抖窗口 = N × 5ms。
+# 2 → 10ms：典型机械抖动 5~20ms，窗口偏薄，磨损后的键可能穿过去。
+# 3 → 15ms：覆盖大部分机械抖动，代价是按下到起振多 5~10ms。
+# ★ 没取 4（20ms）：这台机器要靠同一颗键发电码，18 WPM 的点只有 66ms，
+#   20ms 的起振延迟手感上会"钝"。真遇到抖动再往上加。
+# ★ 电压档的抖动（噪声把读数推过档位边界）不归这里管，由 BSP 的迟滞判决处理。
+CONFIG_BUTTON_DEBOUNCE_TICKS=3
+
+# --- Bluetooth LE / NimBLE ---
+# ESP32-C3 仅支持 BLE；示例只启用单连接 peripheral 所需的最小 host 配置。
+CONFIG_BT_ENABLED=y
+CONFIG_BT_NIMBLE_ENABLED=y
+CONFIG_BT_NIMBLE_ROLE_CENTRAL=n
+CONFIG_BT_NIMBLE_ROLE_PERIPHERAL=y
+CONFIG_BT_NIMBLE_ROLE_BROADCASTER=y
+CONFIG_BT_NIMBLE_ROLE_OBSERVER=n
+CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
+CONFIG_BT_NIMBLE_HOST_BASED_PRIVACY=n
+CONFIG_BT_NIMBLE_NVS_PERSIST=n

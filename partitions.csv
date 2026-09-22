@@ -1,0 +1,13 @@
+# Name,   Type, SubType, Offset,   Size,     Flags
+# ★ 8 MB flash 的双槽 OTA 布局。三个铁律，改之前先读：
+#   1) nvs 的偏移和大小（0x9000 / 0x6000）永远不许动 —— 里面躺着 Wi-Fi 凭据、
+#      呼号、基站地址和全部电台设置，挪一次等于让所有设备出厂复位。
+#   2) 分区表本身烧在 0x8000，改不了 OTA，只能串口烧。所以这张表一次定死。
+#   3) ota_0 顶替了原来的 factory，仍然放在 0x10000 —— IDF 的 bootloader 在
+#      otadata 全 0xFF 且表内没有 factory 时会打 "No factory image, trying OTA 0"
+#      并自动初始化 ota_seq，所以串口烧一次就能起来（bootloader_utility.c）。
+nvs,      data, nvs,     0x9000,   0x6000,
+phy_init, data, phy,     0xf000,   0x1000,
+ota_0,    app,  ota_0,   0x10000,  0x3f0000,
+ota_1,    app,  ota_1,   0x400000, 0x3f0000,
+otadata,  data, ota,     0x7f0000, 0x2000,
