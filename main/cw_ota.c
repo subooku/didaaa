@@ -56,17 +56,20 @@ static void set_msg(const char *fmt, ...) {
 //   直接报 "Error parse url"，整条 OTA 通道就废了。拆成 host + path 给它就绕开了
 //   那一步解析，底下照样是 getaddrinfo。
 static int http_get_body(const char *path, char *out, size_t cap, int timeout_ms) {
+    // ★ 端口与协议都问 cw_net 要，不再看编译期的 CW_FW_PORT / CONFIG_CW_TLS：
+    //   服务器地址填 wss:// 时固件要走 https:443（过 Cloudflare 只认这一条），
+    //   填域名/IP 时走原来的 CW_FW_PORT 明文。同一个固件两种部署都得能升级。
     esp_http_client_config_t cfg = {
-        .host = cw_prov_server_addr(),
-        .port = CW_FW_PORT,
+        .host = cw_net_srv_host(),
+        .port = cw_net_fw_port(),
         .path = path,
         .timeout_ms = timeout_ms,
         .keep_alive_enable = false,
     };
-#if CONFIG_CW_TLS
-    cfg.transport_type = HTTP_TRANSPORT_OVER_SSL;
-    cfg.cert_pem = CW_ROOT_CA_PEM;
-#endif
+    if (cw_net_fw_tls()) {
+        cfg.transport_type = HTTP_TRANSPORT_OVER_SSL;
+        cfg.cert_pem = CW_ROOT_CA_PEM;
+    }
     esp_http_client_handle_t h = esp_http_client_init(&cfg);
     if (!h) return -1;
     esp_http_client_set_method(h, HTTP_METHOD_GET);
@@ -158,16 +161,16 @@ static bool ota_download(const char *path, uint32_t expect) {
     if (e != ESP_OK) { set_msg("OTA BEGIN FAIL %d", e); return false; }
 
     esp_http_client_config_t cfg = {
-        .host = cw_prov_server_addr(),
-        .port = CW_FW_PORT,
+        .host = cw_net_srv_host(),
+        .port = cw_net_fw_port(),
         .path = path,
-        .timeout_ms = 30000,        // 局域网 1.5 MB 很快，但公网 TLS 握手就得算进去
+        .timeout_ms = 60000,        // 公网经 TLS + Cloudflare 拉 1.5 MB，30 s 偏紧
         .keep_alive_enable = false,
     };
-#if CONFIG_CW_TLS
-    cfg.transport_type = HTTP_TRANSPORT_OVER_SSL;
-    cfg.cert_pem = CW_ROOT_CA_PEM;  // 验证服务器是真站：拉的是马上要烧进 Flash 的镜像
-#endif
+    if (cw_net_fw_tls()) {
+        cfg.transport_type = HTTP_TRANSPORT_OVER_SSL;
+        cfg.cert_pem = CW_ROOT_CA_PEM;  // 验证服务器是真站：拉的是马上要烧进 Flash 的镜像
+    }
     esp_http_client_handle_t h = esp_http_client_init(&cfg);
     if (!h) { esp_ota_abort(handle); set_msg("HTTP INIT FAIL"); return false; }
     esp_http_client_set_method(h, HTTP_METHOD_GET);

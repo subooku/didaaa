@@ -5,6 +5,10 @@
 #include "esp_err.h"
 #include <stdint.h>
 
+// ★ 1.1.14：设备端支持 WebSocket —— 服务器地址填 "wss://host" 就把键控、MQTT、固件
+//   三条路全搬到 443 上，为的是过 Cloudflare（它不代理 UDP，也不代理 21301/1883 这类
+//   自定义端口）。填裸域名或 IP 仍是原来的 UDP 直连，两种部署共用一份固件，改地址就能
+//   来回切，不需要重新烧。改完看启动日志里"键控走 WebSocket"那一行确认进了哪个模式。
 // 固件版本号，ABOUT ME 与 FIRMWARE 两页显示，OTA 时也用它跟服务器上的版本比对。
 // ★ 发新版时改这一处（tools/publish-fw.sh 会从这里抓版本号写进 version.json，
 //   不用手写两遍）。
@@ -26,7 +30,7 @@
 //   21303，编进固件的还是 21306，设备一直连不上）。改完看 build/config/sdkconfig.h 复核。
 //   改完记得两条：① 重新 idf.py build；② 把 build/*.bin 发布到服务器的 /fw/ 下
 //   （tools/publish-fw.sh 会顺便更新 version.json）。
-#define CW_FW_VERSION "1.1.13"
+#define CW_FW_VERSION "1.1.15"
 
 void cw_radio_enter(void);
 void cw_radio_exit(void);

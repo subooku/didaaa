@@ -18,7 +18,14 @@
 //   CW_TLS 关（默认，局域网）：UDP:21303  mqtt://host:1883  http://host:21301
 //   CW_TLS 开（公网推荐）    ：UDP:21303  mqtts://host:8883 https://host/fw/*（443）
 //
-// ★ UDP 键控始终是明文：UDP 之上没有 TLS（只有 DTLS，而 esp-tls 没包它）。
+// ★ 除了上面这两套，地址栏还可以直接带协议前缀，把三条路整个搬到 WebSocket 上：
+//   ws://host   → 键控 /cw + MQTT over WS /mqtt（明文，只在本机调试时用）
+//   wss://host  → 键控 /cw + MQTT over WSS /mqtt + https 固件，全部走 443
+//   这么做的唯一目的是过 Cloudflare：它只代理 443 上的 HTTP/WebSocket，
+//   UDP 一律不代理（要任意端口得买 Enterprise 的 Spectrum）。
+//   运行时判断，不用改编译开关 —— 见 cw_net.c 的 parse_server_scheme()。
+//
+// ★ 明文 UDP 那一跳没有加密：UDP 之上没有 TLS（只有 DTLS，而 esp-tls 没包它）。
 //   所以"安全"在这一路上不是靠加密，而是靠①限制谁能连（WireGuard 隧道 / 防火墙）
 //   ②帧级签名。见 docs/deployment.md 的「UDP 那一跳」。
 #if CONFIG_CW_TLS
@@ -33,15 +40,22 @@
 #define CW_FW_PORT      CONFIG_CW_FW_PORT
 #endif
 
-#if CONFIG_CW_TLS
-// 服务器证书的信任根：main/certs/root_ca.pem，由 main/CMakeLists.txt 用 EMBEDTXTFILES
+// 服务器证书的信任根：main/root_ca.pem，由 main/CMakeLists.txt 用 EMBED_TXTFILES
 // 编进 .rodata（该模式会自动补 '\0'，可以直接当 C 字符串传给 mbedtls）。
-// MQTT 与 HTTPS 都拿它校验证书 —— 不校验的 TLS 只防窃听，防不了中间人冒充服务器。
-// 换成自签服务器时把那个根证书覆盖这个文件即可，代码不用动。
+// ★ 不再包在 CONFIG_CW_TLS 里：地址填 wss:// 时运行时才决定要校验，编译期判断不了。
 extern const uint8_t cw_root_ca_pem_start[] asm("_binary_root_ca_pem_start");
 extern const uint8_t cw_root_ca_pem_end[]   asm("_binary_root_ca_pem_end");
 #define CW_ROOT_CA_PEM  ((const char *)cw_root_ca_pem_start)
-#endif
+
+// ---------------------------------------------------------------------------
+// 服务器地址那一栏的"当前解释"（给 OTA / 界面用）
+// ---------------------------------------------------------------------------
+// 地址栏既可以填裸域名/IP，也可以带 ws:// wss:// 前缀。剥前缀这件事只在 cw_net 里做一次，
+// 别处（OTA、MQTT、界面）一律问这三个函数要，避免各写各的解析规则。
+bool        cw_net_use_ws(void);        // 这一栏是 ws:// 或 wss:// 吗
+const char *cw_net_srv_host(void);      // 剥掉前缀后的主机名（IP / 域名，永不为空前缀）
+int         cw_net_fw_port(void);       // 固件/网页端口：wss 443、ws 80，否则 CONFIG_CW_FW_PORT
+bool        cw_net_fw_tls(void);        // 固件下载走 https 吗（wss:// 或 CONFIG_CW_TLS）
 
 esp_err_t cw_net_start(uint32_t freq, int wpm);
 void     cw_net_stop(void);

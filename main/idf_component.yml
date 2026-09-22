@@ -1,2 +1,3 @@
 dependencies:
-  espressif/mqtt: "^1.1.0"
+  espressif/mqtt: ^1.1.0
+  espressif/esp_websocket_client: ^1.3.0
