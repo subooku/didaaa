@@ -39,7 +39,7 @@ menu "CW Radio"
 
     config CW_CALLSIGN
         string "Callsign"
-        default "BH1ABC"
+        default ""
         help
             最多 8 个字符，只允许字母和数字。不足 3 位时用 MAC 尾段生成 NXXXX。
 
