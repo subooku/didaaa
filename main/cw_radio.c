@@ -1549,10 +1549,10 @@ static void refresh_adj(void) {
         snprintf(av[3], sizeof(av[3]), "ZGF");
         snprintf(av[4], sizeof(av[4]), "1422361371");
         snprintf(av[5], sizeof(av[5]), "xxxxx");
-        snprintf(av[6], sizeof(av[6]), "xxxxxx");
-        // 完整仓库地址。取值列只有 132px，一行放不下 29 个字符，按语义断成两行
+        snprintf(av[6], sizeof(av[6]), "1098596164");
+        // 完整仓库地址。取值列只有 132px，一行放不下，按语义断成两行
         // （域名一行、仓库名一行），比让 LVGL 从单词中间断开好认。
-        snprintf(av[7], sizeof(av[7]), "github.com/zgfbupt\ncw-partner");
+        snprintf(av[7], sizeof(av[7]), "github.com/zgfbupt\ndidaaa");
         for (int i = 0; i < ABOUT_ROWS; i++) {
             if (s_about_key[i]) lv_label_set_text(s_about_key[i], ak[i]);
             if (s_about_val[i]) lv_label_set_text(s_about_val[i], av[i]);

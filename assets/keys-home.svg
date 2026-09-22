@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 610" width="780" height="610" role="img" aria-label="主屏收发界面的按键功能说明">
+  <rect x="0" y="0" width="780" height="610" fill="#FFFFFF"/>
+  <g font-family="'PingFang SC','Microsoft YaHei','Helvetica Neue',Helvetica,Arial,sans-serif">
+
+    <text x="40" y="40" font-size="18" font-weight="700" fill="#10233A">主屏（收发界面）· 按键功能</text>
+    <text x="40" y="60" font-size="12" fill="#7A8CA3">屏幕右边三个键，从上到下依次是 OK、UP、DOWN</text>
+
+    <!-- ===== 左侧：设备示意 ===== -->
+    <rect x="40" y="84" width="290" height="290" rx="16" fill="#F7F9FC" stroke="#E3E8EF"/>
+    <rect x="58" y="102" width="200" height="254" rx="12" fill="#0B1219" stroke="#59697B" stroke-width="1.2"/>
+
+    <text x="72" y="124" font-size="10" fill="#8FA3B8">VUMM5A</text>
+    <text x="244" y="124" font-size="9" fill="#8FA3B8" text-anchor="end">78%</text>
+    <text x="158" y="158" font-size="21" font-weight="600" fill="#E8F0F8" text-anchor="middle">7.024.200</text>
+    <text x="158" y="174" font-size="9" fill="#6E8095" text-anchor="middle">SPAN 5k</text>
+    <text x="72" y="200" font-size="10.5" fill="#C8D6E5">700 Hz</text>
+    <text x="244" y="200" font-size="10.5" fill="#27AE60" text-anchor="end">S9</text>
+    <g fill="#2E86C1">
+      <rect x="72" y="212" width="6" height="14" rx="1"/><rect x="81" y="208" width="6" height="18" rx="1"/>
+      <rect x="90" y="204" width="6" height="22" rx="1"/><rect x="99" y="210" width="6" height="16" rx="1"/>
+      <rect x="108" y="202" width="6" height="24" rx="1"/><rect x="117" y="206" width="6" height="20" rx="1"/>
+      <rect x="126" y="196" width="6" height="30" rx="1"/><rect x="135" y="192" width="6" height="34" rx="1"/>
+      <rect x="144" y="186" width="6" height="40" rx="1"/><rect x="153" y="194" width="6" height="32" rx="1"/>
+      <rect x="162" y="200" width="6" height="26" rx="1"/><rect x="171" y="206" width="6" height="20" rx="1"/>
+      <rect x="180" y="212" width="6" height="14" rx="1"/><rect x="189" y="208" width="6" height="18" rx="1"/>
+      <rect x="198" y="203" width="6" height="23" rx="1"/><rect x="207" y="209" width="6" height="17" rx="1"/>
+      <rect x="216" y="214" width="6" height="12" rx="1"/><rect x="225" y="210" width="6" height="16" rx="1"/>
+      <rect x="234" y="216" width="6" height="10" rx="1"/>
+    </g>
+    <rect x="72" y="278" width="120" height="7" rx="3.5" fill="#2E86C1" opacity="0.9"/>
+    <rect x="72" y="293" width="88" height="7" rx="3.5" fill="#3A4B5E"/>
+    <rect x="72" y="316" width="172" height="6" rx="3" fill="#1B2430"/>
+    <text x="72" y="340" font-size="9" fill="#27AE60">ONLINE | VUMM5A</text>
+
+    <!-- 三键 -->
+    <rect x="272" y="102" width="42" height="56" rx="10" fill="#FFFFFF" stroke="#B7C3D1" stroke-width="2"/>
+    <text x="293" y="126" font-size="12" font-weight="700" fill="#10233A" text-anchor="middle">OK</text>
+    <text x="293" y="143" font-size="9" fill="#7A8CA3" text-anchor="middle">电键</text>
+
+    <rect x="272" y="201" width="42" height="56" rx="10" fill="#FFFFFF" stroke="#B7C3D1" stroke-width="2"/>
+    <text x="293" y="225" font-size="12" font-weight="700" fill="#10233A" text-anchor="middle">UP</text>
+    <text x="293" y="242" font-size="9" fill="#7A8CA3" text-anchor="middle">▲ 加</text>
+
+    <rect x="272" y="300" width="42" height="56" rx="10" fill="#FFFFFF" stroke="#B7C3D1" stroke-width="2"/>
+    <text x="293" y="324" font-size="12" font-weight="700" fill="#10233A" text-anchor="middle">DN</text>
+    <text x="293" y="341" font-size="9" fill="#7A8CA3" text-anchor="middle">▼ 减</text>
+
+    <!-- ===== 右侧：功能卡片 ===== -->
+    <!-- 1 -->
+    <rect x="352" y="84" width="388" height="58" rx="10" fill="#F7F9FC" stroke="#E3E8EF"/>
+    <rect x="366" y="99" width="66" height="28" rx="7" fill="#FFFFFF" stroke="#C3CDD9" stroke-width="1.5"/>
+    <text x="399" y="118" font-size="12" font-weight="700" fill="#10233A" text-anchor="middle">短按 OK</text>
+    <text x="448" y="107" font-size="12.5" font-weight="700" fill="#10233A">发一个「点」·</text>
+    <text x="448" y="126" font-size="11" fill="#40546B">侧音响起、屏幕解出字符，键控帧同时发到网上</text>
+
+    <!-- 2 -->
+    <rect x="352" y="150" width="388" height="58" rx="10" fill="#F7F9FC" stroke="#E3E8EF"/>
+    <rect x="366" y="165" width="66" height="28" rx="7" fill="#FFFFFF" stroke="#C3CDD9" stroke-width="1.5"/>
+    <text x="399" y="184" font-size="12" font-weight="700" fill="#10233A" text-anchor="middle">按住 OK</text>
+    <text x="448" y="173" font-size="12.5" font-weight="700" fill="#10233A">发一个「划」−</text>
+    <text x="448" y="192" font-size="11" fill="#40546B">松手才结束；在线时长按永远是长划，不会弹菜单</text>
+
+    <!-- 3 -->
+    <rect x="352" y="216" width="388" height="58" rx="10" fill="#F7F9FC" stroke="#E3E8EF"/>
+    <rect x="366" y="231" width="66" height="28" rx="7" fill="#FFFFFF" stroke="#C3CDD9" stroke-width="1.5"/>
+    <text x="399" y="250" font-size="12" font-weight="700" fill="#10233A" text-anchor="middle">短按 UP/DN</text>
+    <text x="448" y="239" font-size="12.5" font-weight="700" fill="#10233A">频率 ±1 个步进</text>
+    <text x="448" y="258" font-size="11" fill="#40546B">UP 升、DOWN 降；步进大小在菜单 STEP 里选</text>
+
+    <!-- 4 -->
+    <rect x="352" y="282" width="388" height="58" rx="10" fill="#F7F9FC" stroke="#E3E8EF"/>
+    <rect x="366" y="297" width="66" height="28" rx="7" fill="#FFFFFF" stroke="#C3CDD9" stroke-width="1.5"/>
+    <text x="399" y="316" font-size="12" font-weight="700" fill="#10233A" text-anchor="middle">按住 UP/DN</text>
+    <text x="448" y="305" font-size="12.5" font-weight="700" fill="#10233A">连续调频（找台用）</text>
+    <text x="448" y="324" font-size="11" fill="#40546B">按住 400 ms 后按 110 ms 一次的节奏自动连发</text>
+
+    <!-- 5 组合键 · 橙色强调 -->
+    <rect x="352" y="348" width="388" height="58" rx="10" fill="#FFF6EC" stroke="#F0C078" stroke-width="1.6"/>
+    <rect x="366" y="363" width="66" height="28" rx="7" fill="#FFFFFF" stroke="#D79A46" stroke-width="1.5"/>
+    <text x="399" y="382" font-size="11.5" font-weight="700" fill="#B9711C" text-anchor="middle">UP + DN</text>
+    <path d="M456 372 l7 -12 l7 12 Z" fill="#E67E22"/>
+    <text x="474" y="371" font-size="12.5" font-weight="700" fill="#B9711C">同时按下 = 切换 在线 / 离线</text>
+    <text x="474" y="390" font-size="11" fill="#7A4A10">离线＝独自练习：侧音、解码照常，但不发到网上</text>
+
+    <!-- 6 长按进菜单 · 红色强调 -->
+    <rect x="352" y="414" width="388" height="62" rx="10" fill="#FDEDEB" stroke="#EFA79E" stroke-width="1.6"/>
+    <rect x="366" y="429" width="66" height="28" rx="7" fill="#FFFFFF" stroke="#D8736A" stroke-width="1.5"/>
+    <text x="399" y="448" font-size="12" font-weight="700" fill="#C0392B" text-anchor="middle">长按 OK</text>
+    <path d="M456 438 l7 -12 l7 12 Z" fill="#E74C3C"/>
+    <text x="474" y="437" font-size="12.5" font-weight="700" fill="#C0392B">按住 2 秒 = 进入菜单</text>
+    <text x="474" y="456" font-size="11" fill="#7A2018">只在「离线」状态下有效，在线时长按只是一记长划</text>
+
+    <!-- 底部横幅 -->
+    <rect x="40" y="492" width="700" height="90" rx="12" fill="#FFF4E5" stroke="#F0C36D" stroke-width="1.6"/>
+    <path d="M64 520 l9 -16 l9 16 Z" fill="#E67E22"/>
+    <text x="92" y="524" font-size="13.5" font-weight="700" fill="#7A4A10">在线时想进菜单？先切离线，再长按 OK</text>
+    <text x="64" y="546" font-size="11.5" fill="#7A4A10">1. 同时按 UP + DOWN，屏幕上边框由绿色变灰、状态行变成 OFFLINE，表示已离线；</text>
+    <text x="64" y="564" font-size="11.5" fill="#7A4A10">2. 再长按 OK 满 2 秒，进入 SETTINGS 菜单；</text>
+    <text x="64" y="582" font-size="11.5" fill="#7A4A10">3. 菜单里长按 OK 2 秒可逐级返回，回到主屏后再 UP + DOWN 重新上线。</text>
+  </g>
+</svg>

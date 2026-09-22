@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 460" width="780" height="460" role="img" aria-label="在线、离线、菜单三种状态的切换方式">
+  <rect x="0" y="0" width="780" height="460" fill="#FFFFFF"/>
+  <g font-family="'PingFang SC','Microsoft YaHei','Helvetica Neue',Helvetica,Arial,sans-serif">
+
+    <text x="40" y="38" font-size="18" font-weight="700" fill="#10233A">三种状态怎么切（最容易踩坑的一张图）</text>
+    <text x="40" y="58" font-size="12" fill="#7A8CA3">在线 ⇄ 离线 靠组合键，离线 ⇄ 菜单 靠长按；在线不能直接跳到菜单</text>
+
+    <!-- 禁止路径：在线 -> 菜单 -->
+    <path d="M120 140 C 200 78, 580 78, 660 140" fill="none" stroke="#E74C3C" stroke-width="2" stroke-dasharray="6 5"/>
+    <circle cx="390" cy="100" r="13" fill="#FFFFFF" stroke="#E74C3C" stroke-width="2.2"/>
+    <path d="M384 94 L396 106 M396 94 L384 106" stroke="#E74C3C" stroke-width="2.4" stroke-linecap="round"/>
+    <text x="390" y="70" font-size="12.5" font-weight="700" fill="#C0392B" text-anchor="middle">在线时：长按 OK 只是一记长划，进不了菜单</text>
+
+    <!-- ===== 状态 A：在线 ===== -->
+    <rect x="30" y="140" width="180" height="140" rx="14" fill="#FFFFFF" stroke="#27AE60" stroke-width="2.2"/>
+    <rect x="42" y="154" width="156" height="94" rx="8" fill="#0B1219"/>
+    <rect x="42" y="154" width="156" height="94" rx="8" fill="none" stroke="#27AE60" stroke-width="1.4"/>
+    <text x="120" y="176" font-size="11" font-weight="700" fill="#27AE60" text-anchor="middle">ONLINE</text>
+    <text x="120" y="200" font-size="15" font-weight="600" fill="#E8F0F8" text-anchor="middle">7.024.200</text>
+    <g fill="#2E86C1">
+      <rect x="52" y="212" width="6" height="10" rx="1"/><rect x="61" y="208" width="6" height="14" rx="1"/>
+      <rect x="70" y="204" width="6" height="18" rx="1"/><rect x="79" y="210" width="6" height="12" rx="1"/>
+      <rect x="88" y="200" width="6" height="22" rx="1"/><rect x="97" y="206" width="6" height="16" rx="1"/>
+      <rect x="106" y="202" width="6" height="20" rx="1"/><rect x="115" y="210" width="6" height="12" rx="1"/>
+      <rect x="124" y="214" width="6" height="8" rx="1"/><rect x="133" y="208" width="6" height="14" rx="1"/>
+      <rect x="142" y="212" width="6" height="10" rx="1"/><rect x="151" y="206" width="6" height="16" rx="1"/>
+      <rect x="160" y="211" width="6" height="11" rx="1"/><rect x="169" y="209" width="6" height="13" rx="1"/>
+      <rect x="178" y="213" width="6" height="9" rx="1"/>
+    </g>
+    <rect x="52" y="228" width="86" height="6" rx="3" fill="#2E86C1" opacity="0.85"/>
+    <rect x="52" y="238" width="60" height="6" rx="3" fill="#3A4B5E"/>
+    <text x="120" y="266" font-size="12.5" font-weight="700" fill="#10233A" text-anchor="middle">主屏 · 在线</text>
+    <text x="120" y="282" font-size="11" fill="#40546B" text-anchor="middle">OK 就是电键</text>
+
+    <!-- ===== 状态 B：离线 ===== -->
+    <rect x="300" y="140" width="180" height="140" rx="14" fill="#FFFFFF" stroke="#9AA9B8" stroke-width="2.2"/>
+    <rect x="312" y="154" width="156" height="94" rx="8" fill="#0B1219"/>
+    <rect x="312" y="154" width="156" height="94" rx="8" fill="none" stroke="#7A8CA3" stroke-width="1.4"/>
+    <text x="390" y="176" font-size="11" font-weight="700" fill="#7A8CA3" text-anchor="middle">OFFLINE</text>
+    <text x="390" y="200" font-size="15" font-weight="600" fill="#C8D6E5" text-anchor="middle">7.024.200</text>
+    <g fill="#3A4B5E">
+      <rect x="322" y="212" width="6" height="10" rx="1"/><rect x="331" y="208" width="6" height="14" rx="1"/>
+      <rect x="340" y="204" width="6" height="18" rx="1"/><rect x="349" y="210" width="6" height="12" rx="1"/>
+      <rect x="358" y="200" width="6" height="22" rx="1"/><rect x="367" y="206" width="6" height="16" rx="1"/>
+      <rect x="376" y="202" width="6" height="20" rx="1"/><rect x="385" y="210" width="6" height="12" rx="1"/>
+      <rect x="394" y="214" width="6" height="8" rx="1"/><rect x="403" y="208" width="6" height="14" rx="1"/>
+      <rect x="412" y="212" width="6" height="10" rx="1"/><rect x="421" y="206" width="6" height="16" rx="1"/>
+      <rect x="430" y="211" width="6" height="11" rx="1"/><rect x="439" y="209" width="6" height="13" rx="1"/>
+      <rect x="448" y="213" width="6" height="9" rx="1"/>
+    </g>
+    <rect x="322" y="228" width="86" height="6" rx="3" fill="#3A4B5E"/>
+    <rect x="322" y="238" width="60" height="6" rx="3" fill="#2A3644"/>
+    <text x="390" y="266" font-size="12.5" font-weight="700" fill="#10233A" text-anchor="middle">主屏 · 离线</text>
+    <text x="390" y="282" font-size="11" fill="#40546B" text-anchor="middle">OK 长按 2s 才进菜单</text>
+
+    <!-- ===== 状态 C：菜单 ===== -->
+    <rect x="570" y="140" width="180" height="140" rx="14" fill="#FFFFFF" stroke="#F0B429" stroke-width="2.2"/>
+    <rect x="582" y="154" width="156" height="94" rx="8" fill="#0B1219"/>
+    <text x="660" y="170" font-size="10" font-weight="700" fill="#E8F0F8" text-anchor="middle">SETTINGS</text>
+    <text x="592" y="187" font-size="8.5" fill="#C8D6E5">SIDE TONE</text>
+    <text x="592" y="202" font-size="8.5" fill="#C8D6E5">SPEED</text>
+    <rect x="588" y="208" width="140" height="16" rx="4" fill="#243447"/>
+    <text x="592" y="220" font-size="8.5" font-weight="700" fill="#FFB300">STEP</text>
+    <text x="592" y="236" font-size="8.5" fill="#C8D6E5">WI-FI SETUP</text>
+    <text x="660" y="266" font-size="12.5" font-weight="700" fill="#10233A" text-anchor="middle">菜单 SETTINGS</text>
+    <text x="660" y="282" font-size="11" fill="#40546B" text-anchor="middle">长按 OK 逐级返回</text>
+
+    <!-- 箭头 A <-> B -->
+    <path d="M214 200 H292" stroke="#2E86C1" stroke-width="2" fill="none"/>
+    <path d="M292 200 l-8 -4 v8 Z" fill="#2E86C1"/>
+    <path d="M292 214 H214" stroke="#2E86C1" stroke-width="2" fill="none"/>
+    <path d="M214 214 l8 -4 v8 Z" fill="#2E86C1"/>
+    <text x="253" y="188" font-size="11.5" font-weight="700" fill="#2E86C1" text-anchor="middle">UP + DOWN</text>
+    <text x="253" y="232" font-size="11" fill="#40546B" text-anchor="middle">同时按下</text>
+
+    <!-- 箭头 B <-> C -->
+    <path d="M484 200 H562" stroke="#2E86C1" stroke-width="2" fill="none"/>
+    <path d="M562 200 l-8 -4 v8 Z" fill="#2E86C1"/>
+    <path d="M562 214 H484" stroke="#2E86C1" stroke-width="2" fill="none"/>
+    <path d="M484 214 l8 -4 v8 Z" fill="#2E86C1"/>
+    <text x="523" y="188" font-size="11.5" font-weight="700" fill="#2E86C1" text-anchor="middle">长按 OK 2s</text>
+    <text x="523" y="232" font-size="11" fill="#40546B" text-anchor="middle">进 / 退</text>
+
+    <!-- 底部要点 -->
+    <rect x="40" y="306" width="700" height="132" rx="12" fill="#F4F7FA" stroke="#E3E8EF"/>
+    <text x="64" y="334" font-size="12.5" font-weight="700" fill="#10233A">记住这三条就够了</text>
+    <circle cx="70" cy="356" r="4" fill="#27AE60"/>
+    <text x="86" y="360" font-size="11.5" fill="#40546B">在线：能收能发，屏幕外边框是绿色的；此时 OK 只属于电键，不存在「长按进菜单」这回事。</text>
+    <circle cx="70" cy="382" r="4" fill="#7A8CA3"/>
+    <text x="86" y="386" font-size="11.5" fill="#40546B">离线：侧音、本地解码照常，只是不发到网上 —— 适合独自练手法。边框变灰、状态行显示 OFFLINE。</text>
+    <circle cx="70" cy="408" r="4" fill="#E67E22"/>
+    <text x="86" y="412" font-size="11.5" fill="#40546B">改完参数回到主屏后仍是离线状态，需要再按一次 UP + DOWN 才会重新上线。</text>
+  </g>
+</svg>

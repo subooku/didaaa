@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 560" width="780" height="560" role="img" aria-label="DiDaaa 主屏界面导览">
+  <rect x="0" y="0" width="780" height="560" fill="#FFFFFF"/>
+  <g font-family="'PingFang SC','Microsoft YaHei','Helvetica Neue',Helvetica,Arial,sans-serif">
+
+    <text x="40" y="38" font-size="18" font-weight="700" fill="#10233A">主屏界面导览</text>
+    <text x="40" y="58" font-size="12" fill="#7A8CA3">240 × 320 的整屏都属于收发界面；外圈边框的颜色就是在线状态</text>
+
+    <!-- ===== 屏幕 ===== -->
+    <rect x="46" y="80" width="248" height="328" rx="18" fill="#0B1219" stroke="#27AE60" stroke-width="2.6"/>
+
+    <!-- 顶行：呼号 / 电量 / Wi-Fi -->
+    <text x="62" y="104" font-size="12" fill="#C8D6E5">VUMM5A</text>
+    <text x="278" y="104" font-size="11" fill="#8FA3B8" text-anchor="end">78%</text>
+    <g fill="#8FA3B8">
+      <rect x="238" y="98" width="3" height="5" rx="1"/>
+      <rect x="243" y="95" width="3" height="8" rx="1"/>
+      <rect x="248" y="92" width="3" height="11" rx="1"/>
+    </g>
+
+    <!-- 频率 + SPAN -->
+    <text x="62" y="142" font-size="27" font-weight="600" fill="#E8F0F8">7.024.200</text>
+    <text x="278" y="142" font-size="11" fill="#6E8095" text-anchor="end">SPAN 5k</text>
+
+    <!-- 音调 + S 表 -->
+    <text x="62" y="176" font-size="13" fill="#C8D6E5">700 Hz</text>
+    <rect x="140" y="164" width="104" height="14" rx="4" fill="#1B2430"/>
+    <rect x="140" y="164" width="104" height="14" rx="4" fill="#27AE60"/>
+    <text x="278" y="176" font-size="12" font-weight="700" fill="#27AE60" text-anchor="end">S9</text>
+
+    <!-- 频谱 -->
+    <g fill="#2E86C1">
+      <rect x="62" y="242" width="4.5" height="8" rx="1"/><rect x="68.75" y="238" width="4.5" height="12" rx="1"/>
+      <rect x="75.5" y="240" width="4.5" height="10" rx="1"/><rect x="82.25" y="234" width="4.5" height="16" rx="1"/>
+      <rect x="89" y="236" width="4.5" height="14" rx="1"/><rect x="95.75" y="230" width="4.5" height="20" rx="1"/>
+      <rect x="102.5" y="232" width="4.5" height="18" rx="1"/><rect x="109.25" y="224" width="4.5" height="26" rx="1"/>
+      <rect x="116" y="228" width="4.5" height="22" rx="1"/><rect x="122.75" y="220" width="4.5" height="30" rx="1"/>
+      <rect x="129.5" y="214" width="4.5" height="36" rx="1"/><rect x="136.25" y="208" width="4.5" height="42" rx="1"/>
+      <rect x="143" y="204" width="4.5" height="46" rx="1"/><rect x="149.75" y="198" width="4.5" height="52" rx="1"/>
+      <rect x="156.5" y="206" width="4.5" height="44" rx="1"/><rect x="163.25" y="212" width="4.5" height="38" rx="1"/>
+      <rect x="170" y="218" width="4.5" height="32" rx="1"/><rect x="176.75" y="210" width="4.5" height="40" rx="1"/>
+      <rect x="183.5" y="216" width="4.5" height="34" rx="1"/><rect x="190.25" y="224" width="4.5" height="26" rx="1"/>
+      <rect x="197" y="220" width="4.5" height="30" rx="1"/><rect x="203.75" y="228" width="4.5" height="22" rx="1"/>
+      <rect x="210.5" y="234" width="4.5" height="16" rx="1"/><rect x="217.25" y="230" width="4.5" height="20" rx="1"/>
+      <rect x="224" y="236" width="4.5" height="14" rx="1"/><rect x="230.75" y="232" width="4.5" height="18" rx="1"/>
+      <rect x="237.5" y="238" width="4.5" height="12" rx="1"/><rect x="244.25" y="234" width="4.5" height="16" rx="1"/>
+      <rect x="251" y="240" width="4.5" height="10" rx="1"/><rect x="257.75" y="236" width="4.5" height="14" rx="1"/>
+      <rect x="264.5" y="242" width="4.5" height="8" rx="1"/><rect x="271.25" y="240" width="4.5" height="10" rx="1"/>
+    </g>
+    <!-- 其他台站竖线 -->
+    <rect x="197" y="196" width="1.6" height="54" fill="#27AE60"/>
+    <rect x="149.75" y="196" width="1.6" height="54" fill="#27AE60" opacity="0.55"/>
+    <!-- 我的位置箭头 -->
+    <path d="M166 258 l6 8 l6 -8 Z" fill="#FFB300"/>
+
+    <!-- RX / TX -->
+    <text x="62" y="284" font-size="12" fill="#7FD1FF">RX  CQ CQ DE BH1ABC =</text>
+    <text x="62" y="304" font-size="12" fill="#FFB300">TX  CQ CQ DE VUMM5A</text>
+
+    <!-- 同频台站名单 -->
+    <text x="62" y="334" font-size="11" fill="#C8D6E5">BH1ABC  7.0242   700Hz S9</text>
+    <text x="62" y="350" font-size="11" fill="#C8D6E5">VK2XYZ  7.0242   760Hz S7</text>
+    <text x="62" y="366" font-size="11" fill="#8FA3B8">no station on this freq</text>
+
+    <!-- 状态行 -->
+    <text x="62" y="390" font-size="10.5" fill="#27AE60">ONLINE | VUMM5A</text>
+
+    <!-- ===== 右侧标注 ===== -->
+    <g stroke="#C3CDD9" stroke-width="1.2" fill="none">
+      <path d="M294 100 H330"/><path d="M294 138 H330"/><path d="M294 172 H330"/>
+      <path d="M294 222 H330"/><path d="M294 280 H330"/><path d="M294 300 H330"/>
+      <path d="M294 348 H330"/><path d="M294 388 H330"/><path d="M294 404 H330"/>
+    </g>
+    <g fill="#2E86C1">
+      <circle cx="294" cy="100" r="2.4"/><circle cx="294" cy="138" r="2.4"/><circle cx="294" cy="172" r="2.4"/>
+      <circle cx="294" cy="222" r="2.4"/><circle cx="294" cy="280" r="2.4"/><circle cx="294" cy="300" r="2.4"/>
+      <circle cx="294" cy="348" r="2.4"/><circle cx="294" cy="388" r="2.4"/><circle cx="294" cy="404" r="2.4"/>
+    </g>
+
+    <text x="342" y="96" font-size="12.5" font-weight="700" fill="#10233A">呼号 / 电量 / Wi-Fi</text>
+    <text x="342" y="112" font-size="11" fill="#40546B">左上角优先显示 Ham 呼号，没填才用虚拟呼号，都没有就留白</text>
+
+    <text x="342" y="134" font-size="12.5" font-weight="700" fill="#10233A">当前频率 · SPAN</text>
+    <text x="342" y="150" font-size="11" fill="#40546B">SPAN 是整屏横向覆盖的频率宽度，跟着步进自动缩放</text>
+
+    <text x="342" y="168" font-size="12.5" font-weight="700" fill="#10233A">收听音调 + S 表</text>
+    <text x="342" y="184" font-size="11" fill="#40546B">音调 = 700 Hz +（我的频率 − 对方频率），调到 700 就是零拍</text>
+
+    <text x="342" y="218" font-size="12.5" font-weight="700" fill="#10233A">频谱 · 台站竖线</text>
+    <text x="342" y="234" font-size="11" fill="#40546B">蓝柱是频道占用；绿竖线是其他台站的精确频率；</text>
+    <text x="342" y="248" font-size="11" fill="#40546B">底部琥珀箭头是我在频段里的位置</text>
+
+    <text x="342" y="276" font-size="12.5" font-weight="700" fill="#10233A">RX 行（收）</text>
+    <text x="342" y="292" font-size="11" fill="#40546B">只显示同频台站发来的内容，正在解出的字符实时追加</text>
+
+    <text x="342" y="316" font-size="12.5" font-weight="700" fill="#10233A">TX 行（发）</text>
+    <text x="342" y="332" font-size="11" fill="#40546B">已解出的字符 + 正在敲的点划，方便判断「为什么解出来是 X」</text>
+
+    <text x="342" y="356" font-size="12.5" font-weight="700" fill="#10233A">同频台站名单</text>
+    <text x="342" y="372" font-size="11" fill="#40546B">按 S 值排序最多 3 行，只列真正同频（±100 Hz）的台站</text>
+
+    <text x="342" y="396" font-size="12.5" font-weight="700" fill="#10233A">网络状态行</text>
+    <text x="342" y="412" font-size="11" fill="#40546B">ONLINE / Wi-Fi only / NET FAIL / OFFLINE + 当前呼号</text>
+
+    <text x="342" y="436" font-size="12.5" font-weight="700" fill="#27AE60">外圈边框</text>
+    <text x="342" y="452" font-size="11" fill="#40546B">绿色 = 在线（会发到网上），灰色 = 离线（独自练习）</text>
+
+    <!-- 底部小注 -->
+    <rect x="46" y="424" width="248" height="54" rx="10" fill="#F4F7FA" stroke="#E3E8EF"/>
+    <text x="62" y="446" font-size="10.5" fill="#40546B">屏幕熄着时第一次按键只点亮屏幕；</text>
+    <text x="62" y="462" font-size="10.5" fill="#40546B">背光超时可在菜单 BL TIMEOUT 里选</text>
+    <text x="62" y="474" font-size="10.5" fill="#7A8CA3">10 / 30 / 60 s 或常亮</text>
+  </g>
+</svg>

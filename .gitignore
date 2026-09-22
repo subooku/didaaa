@@ -61,3 +61,13 @@ sdkconfig.old
 managed_components/
 .vscode/
 .idea/
+
+# 编译/脚本产物与编辑器垃圾
+*.log
+*.bak
+*.orig
+*.rej
+*~
+.DS_Store
+._*
+Thumbs.db

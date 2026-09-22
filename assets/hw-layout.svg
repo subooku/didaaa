@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 400" width="760" height="400" role="img" aria-label="DiDaaa 正面硬件布局：屏幕左侧，右侧自上而下 OK、UP、DOWN 三个按键">
+  <rect x="0" y="0" width="760" height="400" fill="#FFFFFF"/>
+  <g font-family="'PingFang SC','Microsoft YaHei','Helvetica Neue',Helvetica,Arial,sans-serif">
+
+    <!-- 机身外壳 -->
+    <rect x="36" y="30" width="324" height="340" rx="30" fill="#EEF2F7" stroke="#D6DEE8" stroke-width="2"/>
+
+    <!-- 屏幕 -->
+    <rect x="64" y="58" width="200" height="267" rx="14" fill="#0B1219" stroke="#59697B" stroke-width="1.5"/>
+    <text x="78" y="80" font-size="11" fill="#8FA3B8">VUMM5A</text>
+    <text x="250" y="80" font-size="10" fill="#8FA3B8" text-anchor="end">78%</text>
+    <text x="164" y="116" font-size="23" font-weight="600" fill="#E8F0F8" text-anchor="middle">7.024.200</text>
+    <text x="164" y="134" font-size="9" fill="#6E8095" text-anchor="middle">SPAN 5k</text>
+    <text x="78" y="162" font-size="11" fill="#C8D6E5">700 Hz</text>
+    <text x="250" y="162" font-size="11" fill="#27AE60" text-anchor="end">S9</text>
+
+    <!-- 频谱柱 -->
+    <g fill="#2E86C1">
+      <rect x="78" y="176" width="6" height="14" rx="1"/><rect x="87" y="172" width="6" height="18" rx="1"/>
+      <rect x="96" y="168" width="6" height="22" rx="1"/><rect x="105" y="174" width="6" height="16" rx="1"/>
+      <rect x="114" y="166" width="6" height="24" rx="1"/><rect x="123" y="170" width="6" height="20" rx="1"/>
+      <rect x="132" y="160" width="6" height="30" rx="1"/><rect x="141" y="156" width="6" height="34" rx="1"/>
+      <rect x="150" y="150" width="6" height="40" rx="1"/><rect x="159" y="158" width="6" height="32" rx="1"/>
+      <rect x="168" y="164" width="6" height="26" rx="1"/><rect x="177" y="170" width="6" height="20" rx="1"/>
+      <rect x="186" y="176" width="6" height="14" rx="1"/><rect x="195" y="172" width="6" height="18" rx="1"/>
+      <rect x="204" y="167" width="6" height="23" rx="1"/><rect x="213" y="173" width="6" height="17" rx="1"/>
+      <rect x="222" y="178" width="6" height="12" rx="1"/><rect x="231" y="174" width="6" height="16" rx="1"/>
+      <rect x="240" y="180" width="6" height="10" rx="1"/>
+    </g>
+
+    <!-- RX / TX 抽象行 -->
+    <rect x="78" y="248" width="126" height="7" rx="3.5" fill="#2E86C1" opacity="0.9"/>
+    <rect x="78" y="264" width="92" height="7" rx="3.5" fill="#3A4B5E"/>
+    <rect x="78" y="286" width="172" height="6" rx="3" fill="#1B2430"/>
+    <text x="78" y="310" font-size="9" fill="#27AE60">ONLINE | VUMM5A</text>
+
+    <!-- 对齐辅助虚线 -->
+    <g stroke="#B7C3D1" stroke-width="1" stroke-dasharray="3 3" fill="none">
+      <line x1="56" y1="58" x2="288" y2="58"/>
+      <line x1="56" y1="325" x2="288" y2="325"/>
+    </g>
+
+    <!-- OK 键 -->
+    <rect x="292" y="58" width="46" height="60" rx="12" fill="#FFFFFF" stroke="#B7C3D1" stroke-width="2"/>
+    <text x="315" y="84" font-size="13" font-weight="700" fill="#10233A" text-anchor="middle">OK</text>
+    <text x="315" y="102" font-size="10" fill="#7A8CA3" text-anchor="middle">确认 / 电键</text>
+
+    <!-- UP 键 -->
+    <rect x="292" y="162" width="46" height="60" rx="12" fill="#FFFFFF" stroke="#B7C3D1" stroke-width="2"/>
+    <text x="315" y="188" font-size="13" font-weight="700" fill="#10233A" text-anchor="middle">UP</text>
+    <text x="315" y="206" font-size="10" fill="#7A8CA3" text-anchor="middle">上 / 加</text>
+
+    <!-- DOWN 键 -->
+    <rect x="292" y="267" width="46" height="58" rx="12" fill="#FFFFFF" stroke="#B7C3D1" stroke-width="2"/>
+    <text x="315" y="293" font-size="13" font-weight="700" fill="#10233A" text-anchor="middle">DN</text>
+    <text x="315" y="311" font-size="10" fill="#7A8CA3" text-anchor="middle">下 / 减</text>
+
+    <!-- 引线 -->
+    <g stroke="#C3CDD9" stroke-width="1.4" fill="none">
+      <path d="M338 88 H386"/>
+      <path d="M338 192 H386"/>
+      <path d="M338 296 H386"/>
+    </g>
+    <circle cx="338" cy="88" r="2.6" fill="#2E86C1"/>
+    <circle cx="338" cy="192" r="2.6" fill="#2E86C1"/>
+    <circle cx="338" cy="296" r="2.6" fill="#2E86C1"/>
+
+    <!-- 右侧说明 -->
+    <text x="400" y="52" font-size="16" font-weight="700" fill="#10233A">正面布局</text>
+    <text x="400" y="70" font-size="11" fill="#7A8CA3">屏幕在左，三个物理键紧贴屏幕右侧竖排</text>
+
+    <text x="400" y="96" font-size="14" font-weight="700" fill="#2E86C1">OK</text>
+    <text x="428" y="96" font-size="12" fill="#40546B">顶部 —— 与屏幕右上角齐平</text>
+    <text x="400" y="114" font-size="11.5" fill="#40546B">主屏：电键（短按=点，按住=划）</text>
+    <text x="400" y="131" font-size="11.5" fill="#40546B">菜单：进入该项 / 确认保存 / 返回上一级（长按）</text>
+
+    <text x="400" y="200" font-size="14" font-weight="700" fill="#2E86C1">UP</text>
+    <text x="428" y="200" font-size="12" fill="#40546B">中间 —— 屏幕垂直中点</text>
+    <text x="400" y="218" font-size="11.5" fill="#40546B">主屏：频率 +1 步进；按住连发</text>
+    <text x="400" y="235" font-size="11.5" fill="#40546B">菜单：上移选中项 / 增大数值</text>
+
+    <text x="400" y="304" font-size="14" font-weight="700" fill="#2E86C1">DOWN</text>
+    <text x="452" y="304" font-size="12" fill="#40546B">底部 —— 与屏幕右下角齐平</text>
+    <text x="400" y="322" font-size="11.5" fill="#40546B">主屏：频率 −1 步进；按住连发</text>
+    <text x="400" y="339" font-size="11.5" fill="#40546B">菜单：下移选中项 / 减小数值</text>
+
+    <!-- 底部注释 -->
+    <rect x="400" y="356" width="324" height="34" rx="8" fill="#F4F7FA" stroke="#E3E8EF"/>
+    <text x="412" y="370" font-size="10.5" fill="#40546B">三个键共用一路 ADC，靠电阻分压区分电压档位；</text>
+    <text x="412" y="384" font-size="10.5" fill="#40546B">OK 与 DOWN 同时按下会并联出第 4 档电压，可作组合键。</text>
+
+    <text x="164" y="356" font-size="10.5" fill="#7A8CA3" text-anchor="middle">240 × 320 圆角 LCD · ST7789P3</text>
+  </g>
+</svg>

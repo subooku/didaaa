@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 520" width="780" height="520" role="img" aria-label="菜单与参数页的按键功能说明">
+  <rect x="0" y="0" width="780" height="520" fill="#FFFFFF"/>
+  <g font-family="'PingFang SC','Microsoft YaHei','Helvetica Neue',Helvetica,Arial,sans-serif">
+
+    <text x="40" y="40" font-size="18" font-weight="700" fill="#10233A">菜单 / 参数页 · 按键功能</text>
+    <text x="40" y="60" font-size="12" fill="#7A8CA3">进入方式：主屏先 UP + DOWN 切到离线，再长按 OK 2 秒</text>
+
+    <!-- ===== 左侧：菜单屏 ===== -->
+    <rect x="40" y="84" width="290" height="290" rx="16" fill="#F7F9FC" stroke="#E3E8EF"/>
+    <rect x="58" y="102" width="200" height="254" rx="12" fill="#0B1219" stroke="#59697B" stroke-width="1.2"/>
+
+    <text x="158" y="126" font-size="12" font-weight="700" fill="#E8F0F8" text-anchor="middle">SETTINGS</text>
+    <line x1="70" y1="134" x2="246" y2="134" stroke="#243447" stroke-width="1"/>
+
+    <text x="76" y="154" font-size="9.5" fill="#C8D6E5">SIDE TONE</text>
+    <text x="76" y="172" font-size="9.5" fill="#C8D6E5">SPEED</text>
+    <text x="76" y="190" font-size="9.5" fill="#C8D6E5">VOLUME</text>
+    <text x="76" y="208" font-size="9.5" fill="#C8D6E5">STEP</text>
+    <rect x="70" y="216" width="172" height="17" rx="4" fill="#243447"/>
+    <text x="76" y="228" font-size="9.5" font-weight="700" fill="#FFB300">WI-FI SETUP</text>
+    <text x="76" y="246" font-size="9.5" fill="#C8D6E5">BASE STATION</text>
+    <text x="76" y="264" font-size="9.5" fill="#C8D6E5">CALLSIGN</text>
+    <text x="76" y="282" font-size="9.5" fill="#C8D6E5">BRIGHTNESS</text>
+    <text x="76" y="300" font-size="9.5" fill="#C8D6E5">BL TIMEOUT</text>
+    <text x="76" y="318" font-size="9.5" fill="#5E7185">REBOOT</text>
+
+    <rect x="70" y="326" width="3" height="0" fill="none"/>
+    <text x="158" y="344" font-size="8.5" fill="#5E7185" text-anchor="middle">OK 进入 · 长按 OK 返回</text>
+
+    <!-- 三键 -->
+    <rect x="272" y="102" width="42" height="56" rx="10" fill="#FFFFFF" stroke="#B7C3D1" stroke-width="2"/>
+    <text x="293" y="126" font-size="12" font-weight="700" fill="#10233A" text-anchor="middle">OK</text>
+    <text x="293" y="143" font-size="9" fill="#7A8CA3" text-anchor="middle">确认</text>
+
+    <rect x="272" y="201" width="42" height="56" rx="10" fill="#FFFFFF" stroke="#B7C3D1" stroke-width="2"/>
+    <text x="293" y="225" font-size="12" font-weight="700" fill="#10233A" text-anchor="middle">UP</text>
+    <text x="293" y="242" font-size="9" fill="#7A8CA3" text-anchor="middle">▲ 上移</text>
+
+    <rect x="272" y="300" width="42" height="56" rx="10" fill="#FFFFFF" stroke="#B7C3D1" stroke-width="2"/>
+    <text x="293" y="324" font-size="12" font-weight="700" fill="#10233A" text-anchor="middle">DN</text>
+    <text x="293" y="341" font-size="9" fill="#7A8CA3" text-anchor="middle">▼ 下移</text>
+
+    <!-- ===== 右侧：卡片 ===== -->
+    <rect x="352" y="84" width="388" height="58" rx="10" fill="#F7F9FC" stroke="#E3E8EF"/>
+    <rect x="366" y="99" width="66" height="28" rx="7" fill="#FFFFFF" stroke="#C3CDD9" stroke-width="1.5"/>
+    <text x="399" y="118" font-size="12" font-weight="700" fill="#10233A" text-anchor="middle">UP / DN</text>
+    <text x="448" y="107" font-size="12.5" font-weight="700" fill="#10233A">上下移动选中项</text>
+    <text x="448" y="126" font-size="11" fill="#40546B">当前项高亮成琥珀色；列表到底会停在首尾，不循环</text>
+
+    <rect x="352" y="150" width="388" height="58" rx="10" fill="#F7F9FC" stroke="#E3E8EF"/>
+    <rect x="366" y="165" width="66" height="28" rx="7" fill="#FFFFFF" stroke="#C3CDD9" stroke-width="1.5"/>
+    <text x="399" y="184" font-size="12" font-weight="700" fill="#10233A" text-anchor="middle">UP / DN</text>
+    <text x="448" y="173" font-size="12.5" font-weight="700" fill="#10233A">进入某项后 = 增减数值</text>
+    <text x="448" y="192" font-size="11" fill="#40546B">侧音、速度、音量、亮度等都是按住可连发增减</text>
+
+    <rect x="352" y="216" width="388" height="58" rx="10" fill="#F7F9FC" stroke="#E3E8EF"/>
+    <rect x="366" y="231" width="66" height="28" rx="7" fill="#FFFFFF" stroke="#C3CDD9" stroke-width="1.5"/>
+    <text x="399" y="250" font-size="12" font-weight="700" fill="#10233A" text-anchor="middle">短按 OK</text>
+    <text x="448" y="239" font-size="12.5" font-weight="700" fill="#10233A">进入该项 / 确认保存</text>
+    <text x="448" y="258" font-size="11" fill="#40546B">数值类改完即存；WI-FI SETUP 与 BASE STATION 会进配网页</text>
+
+    <rect x="352" y="282" width="388" height="58" rx="10" fill="#FFF6EC" stroke="#F0C078" stroke-width="1.6"/>
+    <rect x="366" y="297" width="66" height="28" rx="7" fill="#FFFFFF" stroke="#D79A46" stroke-width="1.5"/>
+    <text x="399" y="316" font-size="12" font-weight="700" fill="#B9711C" text-anchor="middle">短按 OK</text>
+    <text x="448" y="305" font-size="12.5" font-weight="700" fill="#B9711C">CALLSIGN 页：切换焦点行</text>
+    <text x="448" y="324" font-size="11" fill="#7A4A10">UP / DN 选 UPDATE 或 CANCEL，OK 决定是否改 Ham</text>
+
+    <rect x="352" y="348" width="388" height="62" rx="10" fill="#EAF7EF" stroke="#9BD3B0" stroke-width="1.6"/>
+    <rect x="366" y="363" width="66" height="28" rx="7" fill="#FFFFFF" stroke="#4FA96F" stroke-width="1.5"/>
+    <text x="399" y="382" font-size="12" font-weight="700" fill="#1E8449" text-anchor="middle">长按 OK</text>
+    <text x="448" y="371" font-size="12.5" font-weight="700" fill="#1E8449">按住 2 秒 = 返回上一级</text>
+    <text x="448" y="390" font-size="11" fill="#1E6B41">这条任何时候都有效：进得去必定出得来，不会被某一页卡住</text>
+
+    <!-- 底部 -->
+    <rect x="40" y="430" width="700" height="66" rx="12" fill="#F4F7FA" stroke="#E3E8EF"/>
+    <text x="64" y="456" font-size="12" font-weight="700" fill="#10233A">通用规则（不分主屏 / 菜单）</text>
+    <text x="64" y="476" font-size="11.5" fill="#40546B">屏幕熄着时，第一次按键只点亮屏幕 —— 不进菜单、不改参数、不发报；</text>
+    <text x="64" y="492" font-size="11.5" fill="#40546B">按键有 15 ms 硬件消抖 + 电压档迟滞判档，磨损的锅仔片也不会连出两个点。</text>
+  </g>
+</svg>
