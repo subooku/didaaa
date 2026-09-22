@@ -2,7 +2,7 @@
 //
 // 凭据存在 NVS（namespace "cw"），不再靠编译时写死：
 //   ssid / pass  家里 Wi-Fi 的用户名与密码（必需）
-//   srv          服务器 IP（可选；取值规则见 cw_prov_server_addr，空不一定是"没填"）
+//   srv          服务器地址（可选；IP 或域名都行，取值规则见 cw_prov_server_addr）
 //   srvclr       1 = 基站被清过（恢复出厂），此时不许再拿 Kconfig 的地址兜底
 //   call         呼号（可选，空则用 Kconfig 的 CONFIG_CW_CALLSIGN）
 //   force        1 = 下次开机直接进配网（菜单里手动触发用）
@@ -20,7 +20,10 @@
 
 #define CW_PROV_SSID_MAX 33
 #define CW_PROV_PASS_MAX 65
-#define CW_PROV_SRV_MAX  40
+// 64 而不是 40：这一栏现在要放域名（station.didaaa.bubblegear.xyz 就有 29 个字符），
+// 别人自建服务器的域名可能更长。DNS 名字理论上能到 253，但我们只用它连一台服务器，
+// 64 足够，再长就挤爆配网页的输入框和 ABOUT 那一行的排版了。
+#define CW_PROV_SRV_MAX  64
 #define CW_PROV_CALL_MAX 9
 // 虚拟呼号最长 6 位（V + 5 位），留一位给 '\0'。
 #define CW_PROV_VCALL_MAX 9

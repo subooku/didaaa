@@ -264,9 +264,9 @@ flowchart TB
     end
 
     subgraph SRV["CW 服务器"]
-        UDP["UDP :6000<br/>auth · 键控 · 心跳"]
+        UDP["UDP :21303<br/>auth · 键控 · 心跳"]
         MQTT["MQTT :1883<br/>presence · 名单 · 占用表"]
-        HTTP["HTTP :8080<br/>OTA · 测试页面"]
+        HTTP["HTTP :21301<br/>OTA · 测试页面"]
         IDDB[("identity.json<br/>UID ↔ 呼号")]
         UDP <--> IDDB
     end
@@ -283,9 +283,9 @@ flowchart TB
 
 | 通路 | 承载 | 为什么用它 |
 |---|---|---|
-| **UDP 6000** | 认证、心跳、键控帧 | 键控要低延迟、要容忍丢包，不能套 TCP 的重传逻辑 |
+| **UDP 21303** | 认证、心跳、键控帧 | 键控要低延迟、要容忍丢包，不能套 TCP 的重传逻辑 |
 | **MQTT 1883** | presence（含 LWT 遗嘱）、在线名单、频道占用表 | 有状态但不实时，发布订阅模型天然适合"谁在线"这类广播 |
-| **HTTP 8080** | `/fw/version` + `/fw/cw.bin` | OTA 走成熟可靠的 HTTP 下载，Range 请求天然支持断点续传 |
+| **HTTP 21301** | `/fw/version` + `/fw/cw.bin` | OTA 走成熟可靠的 HTTP 下载，Range 请求天然支持断点续传 |
 
 UDP 帧统一 16 字节定长：`CW` 魔数 + 类型 + 载荷（详见 `main/cw_proto.h`）。
 
@@ -339,8 +339,8 @@ idf.py build flash monitor
 服务端**不在本仓库**（见[服务端仓库](#服务端仓库)）。最小可用要求：Node 18+，零第三方依赖。
 
 ```bash
-node server.js                    # 起 8080/tcp + 6000/udp + 1883/tcp
-curl localhost:8080/who           # 看谁在线
+node server.js                    # 起 21301/tcp + 21303/udp + 1883/tcp
+curl localhost:21301/who           # 看谁在线
 ```
 
 ### 4. 通联
@@ -348,6 +348,19 @@ curl localhost:8080/who           # 看谁在线
 两台设备调到同一个频率（比如都停在默认的 7.024.200），按 OK 发报。对方听到 700 Hz 的零拍音调，屏幕上 RX 行同步解出字符。
 
 想多一点热闹，服务端里内置了几个演示台站，会定时在各频率上发 CQ —— 一开机就有了"波段里有人在"的感觉。
+
+### 5. 公网部署（自己的域名）
+
+要让别人也能用你的服务器，把服务端放到公网并套上域名 + TLS。设备侧只需要改一格：
+
+菜单 → `BASE STATION` → `CHANGE` → 填域名（例如 `station.didaaa.bubblegear.xyz`）
+
+UDP 键控、MQTT 信令、固件下载三条通路的端口都由它派生；打开 `CW_TLS` 后 MQTT 与固件下载
+自动切到 `mqtts://域名:8883` 与 `https://域名/fw/cw.bin`。完整的 nginx 反代配置、证书签发
+（certbot ECDSA）、防火墙与 UDP 那一跳的加固选项见 **[docs/deployment.md](docs/deployment.md)**。
+
+**UDP 键控套不了 TLS**（UDP 之上没有 TLS），这一路的"安全"只能靠谁能连得到它 ——
+文档里给了 WireGuard 隧道和帧级 HMAC 签名两个方案，按你愿意投入的程度选。
 
 ---
 
@@ -363,7 +376,8 @@ didaaa/
 │   ├── cw_morse.c/h          莫尔斯表、点划时长、编解码状态机
 │   ├── cw_prov.c/h           SoftAP 配网页（三种形态：全套 / 只改服务器 / 只改呼号）
 │   ├── cw_ota.c/h            HTTP 拉镜像 + 写另一槽 + 回滚确认
-│   ├── Kconfig.projbuild     服务端地址、UDP/HTTP 端口等编译期默认值
+│   ├── root_ca.pem           CW_TLS 打开时用的信任根（默认 LE 的 ISRG X1 + X2）
+│   ├── Kconfig.projbuild     服务端地址、UDP/HTTP 端口、CW_TLS 开关
 │   └── idf_component.yml     依赖：espressif/mqtt
 ├── components/bsp/           板级支持：屏幕、音频、按键、I2C、电池
 ├── tools/                    构建与排障脚本（见下表）
@@ -396,7 +410,8 @@ cc -std=c11 -Wall -Wextra -Werror -Imain tests/test_cw_proto.c main/cw_proto.c -
 
 ## 服务端仓库
 
-服务端 `cw-server/` 是配套的另一个工程（Node.js，零第三方依赖），负责：
+服务端 [`didaaa-server`](https://github.com/subooku/didaaa-server) 是配套的独立仓库
+（Node.js，零第三方依赖），负责：
 
 - Global UID → 虚拟呼号的永久绑定（`data/identity.json`）
 - 同频判定与键控实时转发、发送者不自收
@@ -404,9 +419,13 @@ cc -std=c11 -Wall -Wextra -Werror -Imain tests/test_cw_proto.c main/cw_proto.c -
 - 固件 OTA 分发（`/fw/version` + `/fw/cw.bin`）
 - 一个可以开多个标签页模拟多台电台的网页测试端
 
-> TODO：服务端仓库地址
+```bash
+git clone git@github.com:subooku/didaaa-server.git
+cd didaaa-server && node server.js
+```
 
-协议细节（12 条规则、UDP 帧布局、MQTT 主题、部署方式）写在服务端的 README 里。
+协议细节（12 条规则、UDP 帧布局、MQTT 主题、部署方式）写在服务端的 README 里；
+公网部署见[本仓库的 `docs/deployment.md`](docs/deployment.md)。
 
 ---
 

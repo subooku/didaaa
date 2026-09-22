@@ -78,7 +78,20 @@ int cw_proto_occupy_ok(const uint8_t *buf, size_t len) {
     if (!buf || len < 10) return 0;
     if (buf[0] != CW_PROTO_MAGIC0 || buf[1] != CW_PROTO_MAGIC1) return 0;
     if (buf[2] != CW_PROTO_VER || buf[3] != CW_TYPE_OCCUPY) return 0;
-    return len >= (size_t)10 + buf[9];
+    if (buf[9] == 0 || buf[9] > CW_OCC_MAX_ITEMS) return 0;
+    return len >= (size_t)10 + 3 * buf[9];
+}
+
+int cw_proto_parse_occupy(const uint8_t *buf, size_t len, cw_frame_t *out) {
+    if (!out) return 0;
+    if (!cw_proto_occupy_ok(buf, len)) return 0;
+    memset(out, 0, sizeof(*out));
+    out->type         = CW_TYPE_OCCUPY;
+    out->ts           = get_u32(buf + 4);
+    out->bin_khz_x100 = buf[8];
+    out->n            = buf[9];     // 条目数，不是格子总数
+    out->bins         = buf + 10;   // 三元组流：[idx_lo, idx_hi, cnt]
+    return 1;
 }
 
 int cw_proto_parse(const uint8_t *buf, size_t len, cw_frame_t *out) {

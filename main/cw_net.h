@@ -4,9 +4,44 @@
 #pragma once
 
 #include "esp_err.h"
+#include "sdkconfig.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/types.h>
+
+// ---------------------------------------------------------------------------
+// 三条通路怎么由"一个服务器地址"派生出来
+// ---------------------------------------------------------------------------
+// 配网页（或 Kconfig）里只填一个 host —— IP 或域名都行。UDP 键控、MQTT 信令、
+// 固件下载三处的端口和协议都由它加 CW_TLS 这一个开关决定，用户不用分别配端口。
+//
+//   CW_TLS 关（默认，局域网）：UDP:21303  mqtt://host:1883  http://host:21301
+//   CW_TLS 开（公网推荐）    ：UDP:21303  mqtts://host:8883 https://host/fw/*（443）
+//
+// ★ UDP 键控始终是明文：UDP 之上没有 TLS（只有 DTLS，而 esp-tls 没包它）。
+//   所以"安全"在这一路上不是靠加密，而是靠①限制谁能连（WireGuard 隧道 / 防火墙）
+//   ②帧级签名。见 docs/deployment.md 的「UDP 那一跳」。
+#if CONFIG_CW_TLS
+#define CW_MQTT_SCHEME  "mqtts"
+#define CW_MQTT_PORT    8883
+#define CW_FW_SCHEME    "https"
+#define CW_FW_PORT      443
+#else
+#define CW_MQTT_SCHEME  "mqtt"
+#define CW_MQTT_PORT    1883
+#define CW_FW_SCHEME    "http"
+#define CW_FW_PORT      CONFIG_CW_FW_PORT
+#endif
+
+#if CONFIG_CW_TLS
+// 服务器证书的信任根：main/certs/root_ca.pem，由 main/CMakeLists.txt 用 EMBEDTXTFILES
+// 编进 .rodata（该模式会自动补 '\0'，可以直接当 C 字符串传给 mbedtls）。
+// MQTT 与 HTTPS 都拿它校验证书 —— 不校验的 TLS 只防窃听，防不了中间人冒充服务器。
+// 换成自签服务器时把那个根证书覆盖这个文件即可，代码不用动。
+extern const uint8_t cw_root_ca_pem_start[] asm("_binary_root_ca_pem_start");
+extern const uint8_t cw_root_ca_pem_end[]   asm("_binary_root_ca_pem_end");
+#define CW_ROOT_CA_PEM  ((const char *)cw_root_ca_pem_start)
+#endif
 
 esp_err_t cw_net_start(uint32_t freq, int wpm);
 void     cw_net_stop(void);

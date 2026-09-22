@@ -88,7 +88,14 @@ static const char *TAG = "cw_radio";
 
 // 服务端占用表一格 = 2 kHz（server.js 的 BIN）。窗口缩到比它更窄时，柱子就只能成块，
 // 所以放大以后真正有分辨率的是 roster 里的精确台站频率（见 draw_ticks）。
-#define SPEC_BIN_HZ 2000u
+// 占用表一格 = 200 Hz（与服务端 server.js 的 BIN 必须一致）。
+// ★ 原来是 2000 Hz：一个台站会把周围整整 2 kHz 都涂成"有信号"，
+//   频谱上看着像一片宽带噪声而不是一根针 —— 这就是那次"周围 2K 都有信号"的根因。
+//   实际上绝大多数占格子是空的，所以帧里不必铺满整张表，只发非零的那几条，
+//   一格收到 200 Hz（跟 CW_CHAN_TOL_HZ 同数量级）也就没有长度压力了。
+// 整个 200 kHz 频段 = 1000 格，一格一字节。
+#define SPEC_BIN_HZ   200u
+#define SPEC_BINS_MAX ((F_MAX - F_MIN) / SPEC_BIN_HZ)
 
 #define ROSTER_MAX 8
 #define STATION_ROWS 3
@@ -340,7 +347,9 @@ static char      s_txbuf[TXBUF_MAX + 1];
 static char      s_rxbuf[TXBUF_MAX + 1];
 static roster_t  s_roster[ROSTER_MAX];
 static int       s_roster_n;
-static uint8_t   s_bins[100];
+// 展开后的整张占用表：1000 格 × 1 字节。收到帧时先清零再填非零条目，
+// 帧本身是稀疏的（只带有台站的格子），这里还原成完整表供 draw_spectrum 按频率查。
+static uint8_t   s_bins[SPEC_BINS_MAX];
 static int       s_bins_n;
 // 背光超时。s_bl_dim 与 S.bl 分开记：熄灭期间 S.bl 不变，唤醒时原样恢复。
 static int64_t   s_bl_last_ms;
@@ -382,6 +391,12 @@ static void bl_wake(void) {
 
 static cw_net_state_t s_net_state = CW_NET_IDLE;
 static int64_t   s_unix_ms;
+// 收到对时那一刻的本地毫秒：之后的时间 = s_unix_ms + (现在 − 这个基准)。
+// 不每次收包重写 s_unix_ms 是因为那样时钟会跟着 1.5s 一次的推送跳秒。
+static uint32_t  s_unix_base_ms;
+// 时区偏移（分钟）。服务端给的是 UTC 毫秒，这里按北京时间 UTC+8 显示；
+// 换地区改这一个数就行，负值也支持（refresh_clock 里做了跨天归一）。
+#define CLOCK_TZ_MIN 480
 static char      s_chat[64];
 
 // 按键连发
@@ -432,6 +447,7 @@ static volatile bool s_key_run;
 static lv_obj_t *s_main, *s_menu, *s_adj;
 static lv_obj_t *s_lbl_call;
 static lv_obj_t *s_lbl_freq, *s_lbl_pitch, *s_bar_s, *s_lbl_rx, *s_lbl_tx, *s_lbl_net, *s_lbl_bat;
+static lv_obj_t *s_lbl_clock;           // 主屏最下面中间的时钟
 static lv_obj_t *s_ticks[ROSTER_MAX];    // 台站竖线：roster 的精确频率，最多 8 条
 static lv_obj_t *s_lbl_span;             // 当前频谱窗口宽度（跟着 VFO 步进变）
 static lv_obj_t *s_bars[SPEC_BARS];
@@ -913,7 +929,16 @@ static void build_main(void) {
         lv_label_set_long_mode(s_lbl_st[i], LV_LABEL_LONG_MODE_DOTS);
     }
 
+    // 状态行用 recolor：ONLINE / OFFLINE / NET FAIL / IDLE 四个词各给一个颜色，
+    // 后面的 "| 呼号" 保持默认灰。整行染一个色会让呼号跟着变色，反而看不出主次。
     s_lbl_net = make_label(s_main, SAFE, 252, CONTENT_W, "Wi-Fi...", &lv_font_montserrat_14, 0x7A8CA0);
+    lv_label_set_recolor(s_lbl_net, true);
+
+    // 最下面中间的时钟。时间来自服务端对时（MQTT cw/v1/time，UTC 毫秒），
+    // 本地只负责往后走字 —— ESP32-C3 没有带电池维持的 RTC，断电就从头开始，
+    // 靠自己数出来的时间毫无意义。没对上时显示 "--:--"，不拿 00:00 糊弄。
+    s_lbl_clock = make_label(s_main, SAFE, 274, CONTENT_W, "--:--", &lv_font_montserrat_20, 0xC8D6E5);
+    lv_obj_set_style_text_align(s_lbl_clock, LV_TEXT_ALIGN_CENTER, 0);
 
     // 在线/离线状态：从"底部一条"改成绕屏幕一整圈 —— 余光扫到屏幕边缘就知道
     // 当前在线还是离线，不用特地去找底部那条。做法是一个铺满全屏、中间全透明、
@@ -1170,8 +1195,10 @@ static void draw_spectrum(void) {
     if (!s_bins_n || !s_bars[0]) return;
     const int h_max = 30;
     for (int i = 0; i < SPEC_BARS; i++) {
-        // 这根柱子覆盖的频率区间落到哪几个 bin，就取其中最忙的那个：
-        // 全段时一柱约 2.5 格（取 max 才不漏台），放大后几十柱共用一格（成块，正常）。
+        // 这根柱子覆盖的频率区间落到哪几个 bin，就取其中最忙的那个（多个台站挤在
+        // 一个格子里按最忙的画）。全段（SPAN 200k）一柱 5 kHz = 25 格，取 max 才不漏台；
+        // 窗口收到 1 kHz 时一柱只有 25 Hz，比一格（200 Hz）还细，于是相邻几根柱子
+        // 共用同一格 —— 看着是一小撮柱子一起亮，那是 200 Hz 的真实宽度，不是扩散。
         uint32_t f0 = lo + (uint32_t)((uint64_t)span * i / SPEC_BARS);
         uint32_t f1 = lo + (uint32_t)((uint64_t)span * (i + 1) / SPEC_BARS);
         int b0 = (int)((f0 - F_MIN) / SPEC_BIN_HZ);
@@ -1274,12 +1301,45 @@ static void refresh_main(void) {
     }
 
     const char *ns = s_net_state == CW_NET_LINK ? "ONLINE" :
-                     s_net_state == CW_NET_WIFI ? "Wi-Fi only" :
-                     s_net_state == CW_NET_ERROR ? "NET FAIL" : "idle";
-    if (s_chat[0]) snprintf(buf, sizeof(buf), "%s | %s", ns, s_chat);
-    else snprintf(buf, sizeof(buf), "%s | %s", ns, top_call_dash());
+                     s_net_state == CW_NET_WIFI ? "OFFLINE" :
+                     s_net_state == CW_NET_ERROR ? "NET FAIL" : "IDLE";
+    // 四个状态四个颜色：在线绿、离线灰（退到背景里，不抢注意力）、
+    // 网络故障红（这是要人马上处理的）、IDLE 用最暗的灰蓝（还没起来，不重要）。
+    const char *nsc = s_net_state == CW_NET_LINK  ? "27AE60" :
+                      s_net_state == CW_NET_WIFI  ? "8FA3B8" :
+                      s_net_state == CW_NET_ERROR ? "E74C3C" : "5E7185";
+    const char *tail = s_chat[0] ? s_chat : top_call_dash();
+    // LVGL 的 recolor 写法是 "#RRGGBB 文本#"，井号之前的那段颜色码不显示，
+    // 只对后面那串字生效。tail 是呼号或短报文，里面不含井号，不会被误当成颜色指令。
+    snprintf(buf, sizeof(buf), "#%s %s# | %s", nsc, ns, tail);
     lv_label_set_text(s_lbl_net, buf);
     refresh_wifi();                 // 顶行 Wi-Fi 图标跟着网络状态走
+}
+
+// 时钟：脏 checking 到"分钟"这一级就够了 —— tick 是 100ms 一次，
+// 每次都重设文本等于每秒白白重建 10 次 label。
+static void refresh_clock(void) {
+    if (!s_lbl_clock) return;
+    static int last_min = -1;
+    if (!s_unix_ms) {
+        if (last_min != -2) { lv_label_set_text(s_lbl_clock, "--:--"); last_min = -2; }
+        return;
+    }
+    int64_t utc = s_unix_ms + (int64_t)((uint32_t)(esp_timer_get_time() / 1000) - s_unix_base_ms);
+    int32_t m = (int32_t)((utc / 60000 + CLOCK_TZ_MIN) % 1440);
+    if (m < 0) m += 1440;
+    if (m == last_min) return;
+    last_min = m;
+    // 直接拼字符而不是 snprintf：m 已经归一到 [0,1440)，两个分量分别 ≤23 和 ≤59，
+    // 宽度是确定的。交给 printf 反而要跟它的取值范围分析较劲（-Wformat-truncation）。
+    char b[6];
+    b[0] = (char)('0' + (m / 60) / 10);
+    b[1] = (char)('0' + (m / 60) % 10);
+    b[2] = ':';
+    b[3] = (char)('0' + (m % 60) / 10);
+    b[4] = (char)('0' + (m % 60) % 10);
+    b[5] = '\0';
+    lv_label_set_text(s_lbl_clock, b);
 }
 
 static void refresh_battery(void) {
@@ -1385,7 +1445,7 @@ static void adj_btn_show(const char *l0, const char *l1, int focus) {
 }
 
 static void refresh_adj(void) {
-    char v[48];                 // 服务器地址最长 40（CW_PROV_SRV_MAX），24 装不下
+    char v[80];                 // 服务器地址最长 64（CW_PROV_SRV_MAX），前缀 + 端口还剩点余量
     int pct = 0;
     // 默认是"数值 + 进度条"那套；Wi-Fi 确认页换成两个按钮，STEP / BL TIMEOUT
     // 换成列表。每轮都先复位，切到别的菜单项时才不会残留上一页的状态。
@@ -1855,18 +1915,30 @@ void cw_radio_on_roster(const char *text) {
     }
 }
 
-void cw_radio_on_occupy(const uint8_t *bins, int n) {
-    if (!bins || n <= 0) return;
-    if (n > (int)sizeof(s_bins)) n = (int)sizeof(s_bins);
-    memcpy(s_bins, bins, (size_t)n);
-    s_bins_n = n;
+// items 是 occupy 帧里的三元组流：[idx_lo, idx_hi, cnt] × n。
+// ★ 每次来帧都先清表：占用表是"当下谁在哪个格子上"的快照，不是累加量。
+//   留着上一轮的格子不清，台站换频之后旧位置会一直亮着，看着像有幽灵信号。
+void cw_radio_on_occupy(const uint8_t *items, int n) {
+    if (!items || n <= 0) return;
+    if (n > CW_OCC_MAX_ITEMS) n = CW_OCC_MAX_ITEMS;
+    memset(s_bins, 0, sizeof(s_bins));
+    for (int k = 0; k < n; k++) {
+        const uint8_t *p = items + 3 * k;
+        int idx = p[0] | (p[1] << 8);
+        if (idx >= 0 && idx < (int)sizeof(s_bins)) s_bins[idx] = p[2];
+    }
+    s_bins_n = (int)sizeof(s_bins);
     if (s_running && bsp_lvgl_lock(100)) {
         if (s_scr == SCR_MAIN) draw_spectrum();
         bsp_lvgl_unlock();
     }
 }
 
-void cw_radio_on_time(int64_t unix_ms) { s_unix_ms = unix_ms; }
+void cw_radio_on_time(int64_t unix_ms) {
+    // 同时钉住本地基准，之后就靠本地走字，不用等下一次对时。
+    s_unix_ms = unix_ms;
+    s_unix_base_ms = (uint32_t)(esp_timer_get_time() / 1000);
+}
 
 void cw_radio_on_chat(const char *from, const char *msg) {
     snprintf(s_chat, sizeof(s_chat), "%s: %s", from, msg);
@@ -2451,6 +2523,7 @@ static void tick_cb(lv_timer_t *t) {
     if (s_scr == SCR_ADJ && s_sel == ADJ_FW) refresh_adj();
 
     if (s_scr != SCR_MAIN) return;
+    refresh_clock();                // 时钟自己走到分钟才动手，这里只负责给机会
     if (++s_bat_div >= 20) { s_bat_div = 0; refresh_battery(); }
     if (s_rx_pitch && !s_rx_on) s_rx_pitch = 0;
     uint32_t d0 = (uint32_t)(esp_timer_get_time() / 1000);
@@ -2471,6 +2544,7 @@ void cw_radio_enter(void) {
     s_chat[0] = '\0';
     s_roster_n = 0;
     s_bins_n = 0;
+    s_unix_ms = 0;      // 重新等一次服务端对时，别拿上一轮的时间继续走
     tx_stop();
     s_rx_on = false;
     s_rx_key_ms = ms32();

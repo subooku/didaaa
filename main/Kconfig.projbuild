@@ -11,15 +11,39 @@ menu "CW Radio"
         default "mypassword"
 
     config CW_SERVER_IP
-        string "CW server IP (UDP keying)"
+        string "CW server address (IP or domain)"
         default "192.168.1.10"
         help
-            运行 cw-server/server.js 的主机地址。键控走 UDP，填 IP 不填域名。
+            CW 服务器的地址。IP（192.168.1.10）和域名（station.didaaa.bubblegear.xyz）
+            都可以 —— UDP 那一跳会先按 IP 试，不是 IP 才走 DNS 解析。
+            用域名的话换机房 / 换别人的服务器都不用重烧固件，配网页里改一格就行。
+            三个端口都从这一个 host 派生（UDP 21303 / MQTT 1883 或 8883 / 固件 21301 或 443）。
 
     config CW_UDP_PORT
         int "CW server UDP port"
         range 1 65535
-        default 6000
+        default 21303
+        help
+            UDP 之上没有 TLS（TLS 要可靠有序的传输层），这一跳的"安全"靠的是
+            谁能碰得到它，而不是加密 —— 公网部署请把 21303 收进 WireGuard 隧道
+            或防火墙白名单，详见 docs/deployment.md。
+
+            ⚠ 这是编译期常量：改了之后**所有老固件的设备都会连不上**（它们还在往
+            旧端口发帧，而且不会有任何报错）。要么一次性把设备都 OTA/串口重烧，
+            要么让服务端在过渡期同时收新旧两个端口。
+
+    config CW_TLS
+        bool "Transport security: MQTTS + HTTPS"
+        default n
+        help
+            打开后：MQTT 信令走 mqtts://<CW_SERVER_IP>:8883，固件下载走
+            https://<CW_SERVER_IP>/fw/version 与 /fw/cw.bin（端口 443）。
+            两者都用 main/certs/root_ca.pem 里的根证书校验服务器身份 ——
+            ESP32-C3 上有硬件 AES/SHA 加速，ECDSA(P-256) 证书握手通常在几百毫秒内完成。
+            关闭（默认）时是原来的明文 mqtt/http，局域网部署不用改。
+
+            注意它管不到 UDP 键控：UDP 之上没有 TLS。要让键控也保密，只能在它的下层
+            加隧道（WireGuard）或给帧加签名，见 docs/deployment.md。
 
     config CW_MQTT_URI
         string "MQTT broker URI (signalling)"
@@ -27,15 +51,18 @@ menu "CW Radio"
         help
             信令通道：presence（含 LWT 遗嘱）、台站名单、频道占用表、对时、短报文。
             设备端用 TCP 直连最省内存；浏览器需要时服务端可同时开 ws:// 端口。
+            设备实际用的是 CW_SERVER_IP 拼出来的 CW_MQTT_SCHEME://host:port ——
+            这一项只在你想把 MQTT 单独放到另一台机器时才改（改了要同步代码）。
 
     config CW_FW_PORT
         int "Firmware OTA HTTP port"
         range 1 65535
-        default 8080
+        default 21301
         help
-            固件的 HTTP 下载端口，即 cw-server/server.js 的 PORT。设备从
-            http://<CW_SERVER_IP>:<CW_FW_PORT>/fw/version 取版本、从
-            /fw/cw.bin 取镜像。走明文 HTTP：局域网内够用，公网请另加签名校验。
+            固件的下载端口，即 didaaa-server/server.js 的 PORT。设备从
+            http://<CW_SERVER_IP>:<CW_FW_PORT>/fw/version 取版本、从 /fw/cw.bin 取镜像。
+            把 CW_TLS 打开后这一项不再生效（改走标准 HTTPS 的 443）。
+            走明文 HTTP：局域网内够用，公网请开 CW_TLS。
 
     config CW_CALLSIGN
         string "Callsign"

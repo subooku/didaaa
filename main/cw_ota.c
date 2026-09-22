@@ -1,8 +1,9 @@
 // main/cw_ota.c —— 固件空中升级：从 CW 服务器拉镜像写进另一个 app 槽。
 //
 // 三个决定，写下来免得后人踩：
-//   ① 用明文 HTTP 而不是 HTTPS：局域网内传输，HTTPS 要额外几十 KB 的 TLS 缓冲，
-//      C3 现在同时跑着 LVGL + Wi-Fi + I2S DMA，不值得。公网部署再谈签名校验。
+//   ① 传输方式由 CW_TLS 决定：默认明文 HTTP（局域网，省几十 KB 的 TLS 缓冲），
+//      公网部署把 CW_TLS 打开就切到 https://<域名>/fw/*，并用 root_ca.pem 校验证书。
+//      ★ 注意 CW_TLS 只管这一跳和 MQTT：UDP 键控永远是明文，见 docs/deployment.md。
 //   ② 版本号按点分数字逐段比，不做字符串比较 —— 否则 "1.0.10" 会被判成比
 //      "1.0.9" 旧，这种 bug 只在第十次发版时才冒出来，很难查。
 //   ③ 下载整块写入前不做 SHA-256：esp_ota_end 会校验镜像本身的 checksum，
@@ -13,6 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "cw_net.h"         // CW_FW_SCHEME / CW_FW_PORT / CW_ROOT_CA_PEM
 #include "cw_prov.h"
 #include "cw_radio.h"       // CW_FW_VERSION
 #include "esp_http_client.h"
@@ -55,6 +57,9 @@ static int http_get_body(const char *url, char *out, size_t cap, int timeout_ms)
         .timeout_ms = timeout_ms,
         .keep_alive_enable = false,
     };
+#if CONFIG_CW_TLS
+    cfg.cert_pem = CW_ROOT_CA_PEM;
+#endif
     esp_http_client_handle_t h = esp_http_client_init(&cfg);
     if (!h) return -1;
     esp_http_client_set_method(h, HTTP_METHOD_GET);
@@ -147,9 +152,12 @@ static bool ota_download(const char *url, uint32_t expect) {
 
     esp_http_client_config_t cfg = {
         .url = url,
-        .timeout_ms = 30000,        // 局域网 1.5 MB 很快，但别卡在慢速连接上
+        .timeout_ms = 30000,        // 局域网 1.5 MB 很快，但公网 TLS 握手就得算进去
         .keep_alive_enable = false,
     };
+#if CONFIG_CW_TLS
+    cfg.cert_pem = CW_ROOT_CA_PEM;  // 验证服务器是真站：拉的是马上要烧进 Flash 的镜像
+#endif
     esp_http_client_handle_t h = esp_http_client_init(&cfg);
     if (!h) { esp_ota_abort(handle); set_msg("HTTP INIT FAIL"); return false; }
     esp_http_client_set_method(h, HTTP_METHOD_GET);
@@ -223,8 +231,8 @@ static void ota_task(void *arg) {
         s_state = CW_OTA_ERR;
         goto done;
     }
-    char url[128];
-    snprintf(url, sizeof(url), "http://%s:%d/fw/version", srv, CONFIG_CW_FW_PORT);
+    char url[160];          // https://<域名>/fw/cw.bin：域名最长 64，别再按 128 估得太紧
+    snprintf(url, sizeof(url), "%s://%s:%d/fw/version", CW_FW_SCHEME, srv, CW_FW_PORT);
 
     char body[256];
     if (http_get_body(url, body, sizeof(body), 8000) <= 0) {
@@ -249,7 +257,7 @@ static void ota_task(void *arg) {
         goto done;
     }
 
-    snprintf(url, sizeof(url), "http://%s:%d/fw/cw.bin", srv, CONFIG_CW_FW_PORT);
+    snprintf(url, sizeof(url), "%s://%s:%d/fw/cw.bin", CW_FW_SCHEME, srv, CW_FW_PORT);
     if (ota_download(url, s_newsize)) {
         s_pct = 100;
         set_msg("DONE - REBOOTING");

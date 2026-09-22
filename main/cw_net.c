@@ -8,7 +8,7 @@
 #include "cw_net.h"
 #include "cw_proto.h"
 #include "cw_radio.h"
-#include "cw_prov.h"      // 凭据（Wi-Fi / 服务器 IP / 呼号）现在存在 NVS 里，由配网页写入
+#include "cw_prov.h"      // 凭据（Wi-Fi / 服务器地址 / 呼号）存在 NVS 里，由配网页写入
 
 #include "esp_event.h"
 #include "esp_log.h"
@@ -26,6 +26,8 @@
 #include "lwip/err.h"
 #include "lwip/sockets.h"
 #include "lwip/sys.h"
+#include "lwip/netdb.h"   // getaddrinfo：服务器那一栏现在可以填域名，得靠它解析
+#include "lwip/ip_addr.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -76,8 +78,12 @@ static char     s_ham[CW_CALL_LEN + 1];               // 用户自定义真实�
 static char     s_vcall[CW_CALL_LEN + 1];             // 服务器下发虚拟呼号，空 = 还没拿到
 static bool     s_authed;                             // Global UID 认证通过了吗
 // 服务器地址与 MQTT 地址：配网页里填的优先，没填就用 Kconfig 编译值兜底。
-static char     s_srv_ip[40];
-static char     s_mqtt_uri[72];
+// ★ 这一栏可以是 IP（192.168.1.10）也可以是域名（station.didaaa.bubblegear.xyz）——
+//   域名让"换服务器只要改一个字符串"成为可能，也让 OTA 后还能换机房而不用重烧。
+//   64 字节跟着 CW_PROV_SRV_MAX，别再写小：长域名会被 snprintf 悄悄截断，
+//   截出来的字符串还是个合法域名，只是解析失败，很难从现象反推。
+static char     s_srv_host[64];
+static char     s_mqtt_uri[80];
 static char     s_call_cfg[CW_CALL_LEN + 1];
 static volatile bool s_run;
 // 在线/离线：由 UI 层（组合键）切换。离线时 presence 保持一条 retain 的 "0"，
@@ -315,7 +321,11 @@ static void mqtt_event_handler(void *arg, esp_event_base_t base, int32_t id, voi
                 free(copy);
             }
         } else if (tlen >= 12 && strncmp(ev->topic, "cw/v1/occupy", 12) == 0) {
-            cw_radio_on_occupy((const uint8_t *)ev->data, (int)ev->data_len);
+            // MQTT 上运的是跟 UDP 同一套 occupy 帧（含帧头），所以走同一个专用入口，
+            // 不能直接把 payload 当"格子数组"用 —— 它现在是稀疏三元组流。
+            cw_frame_t o;
+            if (cw_proto_parse_occupy((const uint8_t *)ev->data, (size_t)ev->data_len, &o) && o.n > 0)
+                cw_radio_on_occupy(o.bins, o.n);
         } else if (tlen >= 10 && strncmp(ev->topic, "cw/v1/time", 10) == 0) {
             char buf[24] = { 0 };
             size_t n = ev->data_len < sizeof(buf) - 1 ? (size_t)ev->data_len : sizeof(buf) - 1;
@@ -335,11 +345,18 @@ static void mqtt_event_handler(void *arg, esp_event_base_t base, int32_t id, voi
     }
 }
 
+// MQTT 地址也由那一个 host 派生：scheme 与端口跟着 CW_TLS 走（常量见 cw_net.h）。
+// 域名可以直接写进 uri —— esp-mqtt 内部会做地址解析，不需要我们事先换成 IP。
+static void build_mqtt_uri(void) {
+    snprintf(s_mqtt_uri, sizeof(s_mqtt_uri), "%s://%s:%d",
+             CW_MQTT_SCHEME, s_srv_host, CW_MQTT_PORT);
+}
+
 static void mqtt_start(void) {
     char lwt_topic[64];
     snprintf(lwt_topic, sizeof(lwt_topic), "cw/v1/sta/%s/presence", s_call);
 
-    const esp_mqtt_client_config_t cfg = {
+    esp_mqtt_client_config_t cfg = {
         .broker.address.uri = s_mqtt_uri,
         .credentials.client_id = s_call,
         // 掉电/断网时由 broker 代发：别人的名单里立刻看不到我。
@@ -351,6 +368,11 @@ static void mqtt_start(void) {
         .session.keepalive = 30,
         .network.disable_auto_reconnect = false,
     };
+#if CONFIG_CW_TLS
+    // ★ 校验证书这一步不能图省事跳过：不校验的 TLS 只加密、不认服务器是谁，
+    //   中间人拿一张自签证书就能冒充 broker。那比明文更糟 —— 明文至少一眼看得出来。
+    cfg.broker.verification.certificate = CW_ROOT_CA_PEM;
+#endif
     s_mqtt = esp_mqtt_client_init(&cfg);
     if (!s_mqtt) { ESP_LOGE(TAG, "MQTT 客户端创建失败"); return; }
     esp_mqtt_client_register_event(s_mqtt, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
@@ -360,6 +382,34 @@ static void mqtt_start(void) {
 // ---------------------------------------------------------------------------
 // UDP
 // ---------------------------------------------------------------------------
+// ★ 把配置里那一栏服务器地址（IP 或域名）变成 UDP 能用的 sockaddr。
+//   以前是 inet_addr()：它只认点分十进制，填域名会返回 INADDR_NONE，
+//   也就是把 255.255.255.255 当成目标地址 —— 帧全发到广播上，且看不出哪里出错。
+//   所以这里分两步：inet_addr 先跑（配 IP 的人还是大多数，这样就完全不碰 DNS），
+//   失败才上 getaddrinfo。
+static bool resolve_server(uint16_t port) {
+    uint32_t ip = inet_addr(s_srv_host);
+    if (ip != INADDR_NONE) {                 // 纯 IPv4：不用 DNS
+        s_srv.sin_addr.s_addr = ip;
+        return true;
+    }
+    // AF_INET：服务端现在是 udp4 的 socket，先不支持 IPv6。
+    // ai_socktype 必须给 —— lwIP 的 getaddrinfo 用 hints 过滤结果，留空可能拿到
+    // 匹配不上的类型。
+    const struct addrinfo hints = { .ai_family = AF_INET, .ai_socktype = SOCK_DGRAM };
+    struct addrinfo *res = NULL;
+    int e = getaddrinfo(s_srv_host, NULL, &hints, &res);
+    if (e != 0 || !res) {
+        ESP_LOGW(TAG, "DNS 解析 %s 失败（err=%d）", s_srv_host, e);
+        return false;
+    }
+    struct sockaddr_in *sa = (struct sockaddr_in *)res->ai_addr;
+    s_srv.sin_addr.s_addr = sa->sin_addr.s_addr;
+    ESP_LOGI(TAG, "%s -> " IPSTR, s_srv_host, IP2STR((const ip4_addr_t *)&sa->sin_addr));
+    freeaddrinfo(res);
+    return true;
+}
+
 static void udp_send(const uint8_t *frame) {
     if (s_sock < 0) return;
     (void)sendto(s_sock, frame, CW_PROTO_LEN, 0,
@@ -477,6 +527,12 @@ static void udp_recv_tick(void) {
     if (n <= 0) return;
 
     cw_frame_t f;
+    // occupy 帧长度＝10 + 3×条目数，台站少的时候只有十几字节，比 CW_PROTO_LEN 短，
+    // 通用入口会先以"帧不够长"为由把它拒掉，所以这条链路必须单独走。
+    if (cw_proto_occupy_ok(buf, (size_t)n)) {
+        if (cw_proto_parse_occupy(buf, (size_t)n, &f) && f.n > 0) cw_radio_on_occupy(f.bins, f.n);
+        return;
+    }
     if (!cw_proto_parse(buf, (size_t)n, &f)) return;
 
     if (f.type == CW_TYPE_HELLO) {                 // 服务端下发的 ack
@@ -544,14 +600,14 @@ static void net_task(void *arg) {
         vTaskDelete(NULL);
         return;
     }
-    ESP_LOGI(TAG, "Wi-Fi 就绪，服务器 %s:%d", s_srv_ip[0] ? s_srv_ip : "None",
+    ESP_LOGI(TAG, "Wi-Fi 就绪，服务器 %s:%d", s_srv_host[0] ? s_srv_host : "None",
              CONFIG_CW_UDP_PORT);
     cw_prov_note_ok();                 // 连上了：清掉"连不上就进配网"的累计计数
 
     // 没配基站（出厂 / 恢复出厂后 BASE STATION 一页就是 None）：Wi-Fi 通着但没有服务器
-    // 可连。别拿空串去 inet_addr（那会得到 255.255.255.255 这种假地址，UDP 全发到广播上），
-    // 直接停在这儿，状态行显示 NET FAIL 提示"还没配基站"。
-    if (!s_srv_ip[0]) {
+    // 可连。空串拿去解析会得到 255.255.255.255 这种假地址（UDP 全发到广播上），必须在
+    // 进 resolve_server() 之前拦掉，然后停在这儿，状态行显示 NET FAIL 提示"还没配基站"。
+    if (!s_srv_host[0]) {
         ESP_LOGW(TAG, "未配置基站服务器：不做 UDP/MQTT，保持离线"
                       "（菜单 BASE STATION → CHANGE 可以填）");
         cw_radio_on_net_state(CW_NET_ERROR);
@@ -563,7 +619,23 @@ static void net_task(void *arg) {
     memset(&s_srv, 0, sizeof(s_srv));
     s_srv.sin_family = AF_INET;
     s_srv.sin_port = htons((uint16_t)CONFIG_CW_UDP_PORT);
-    s_srv.sin_addr.s_addr = inet_addr(s_srv_ip);
+
+    // ★ 域名要变 IP：UDP 这一跳只认 sockaddr。开机刚拿到 DHCP 时 DNS 可能还没热，
+    //   给它三次机会再放弃 —— 否则一次临时解析失败就直接 NET FAIL，得手动重启。
+    {
+        bool ok = false;
+        for (int i = 0; i < 3 && !ok; i++) {
+            ok = resolve_server(CONFIG_CW_UDP_PORT);
+            if (!ok && i < 2) vTaskDelay(pdMS_TO_TICKS(1000));
+        }
+        if (!ok) {
+            ESP_LOGE(TAG, "服务器地址解析失败：%s", s_srv_host);
+            cw_radio_on_net_state(CW_NET_ERROR);
+            s_run = false;
+            vTaskDelete(NULL);
+            return;
+        }
+    }
 
     s_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
     if (s_sock < 0) {
@@ -651,8 +723,8 @@ static void net_task(void *arg) {
 void cw_net_ids_init(void) {
     cw_cred_t cred;
     bool have = cw_prov_load(&cred);
-    snprintf(s_srv_ip, sizeof(s_srv_ip), "%s", cw_prov_server_addr());
-    snprintf(s_mqtt_uri, sizeof(s_mqtt_uri), "mqtt://%s:%d", s_srv_ip, 1883);
+    snprintf(s_srv_host, sizeof(s_srv_host), "%s", cw_prov_server_addr());
+    build_mqtt_uri();
     snprintf(s_call_cfg, sizeof(s_call_cfg), "%s", (have && cred.call[0]) ? cred.call : "");
     // 上次认证拿到的虚拟呼号：离线开机时屏幕上照样显示它（不是这次新拿的，但号是绑定的）。
     snprintf(s_vcall, sizeof(s_vcall), "%s", (have && cred.vcall[0]) ? cred.vcall : "");
@@ -674,8 +746,8 @@ esp_err_t cw_net_start(uint32_t freq, int wpm) {
     // 没配过用 Kconfig 兜底（可能是空串 = 没配基站，见 cw_prov_server_addr）。
     cw_cred_t cred;
     bool have = cw_prov_load(&cred);
-    snprintf(s_srv_ip, sizeof(s_srv_ip), "%s", cw_prov_server_addr());
-    snprintf(s_mqtt_uri, sizeof(s_mqtt_uri), "mqtt://%s:%d", s_srv_ip, 1883);
+    snprintf(s_srv_host, sizeof(s_srv_host), "%s", cw_prov_server_addr());
+    build_mqtt_uri();
     snprintf(s_call_cfg, sizeof(s_call_cfg), "%s", (have && cred.call[0]) ? cred.call : "");
     snprintf(s_vcall, sizeof(s_vcall), "%s", (have && cred.vcall[0]) ? cred.vcall : "");
 

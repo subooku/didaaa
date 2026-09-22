@@ -14,7 +14,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-SERVER_DIR="${REPO_ROOT}/../cw-server"
+SERVER_DIR="${REPO_ROOT}/../didaaa-server"
 FW_DIR="${SERVER_DIR}/firmware"
 APP_BIN="${REPO_ROOT}/build/FoloToy-AI-Passport.bin"
 VER_HDR="${REPO_ROOT}/main/cw_radio.h"

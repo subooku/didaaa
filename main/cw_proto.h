@@ -14,7 +14,13 @@
 // 服务端 → 设备
 //   1 = key      [4..6) from [6..8) seq [8..12) sts [12..14) pitch [14] s [15] on
 //   2 = ack      [4..6) uid  [8..12) fmin  [12..16) fmax
-//   3 = occupy   [4..8) ts   [8] bin/100   [9] n      [10..10+n) 每格台站数
+//   3 = occupy   [4..8) ts   [8] bin/100（一格多少 Hz ÷ 100）  [9] m（条目数）
+//                [10..10+3m) 每条 3 字节：[0..2) bin 序号 LE  [2] 该格台站数
+//                ★ 稀疏发送：只报有台站的格子（通常个位数到几十），不再铺满整张
+//                  表。原来铺满时一格 2 kHz，因为帧长和单字节 n 的限制放不细；
+//                  改成只发非零格之后，一格能收到 200 Hz（见 server.js 的 BIN），
+//                  直方图就不会把台站周围的 ±2 kHz 都涂成有信号了。
+//                  m 上限 CW_OCC_MAX_ITEMS，接收方按 3*m 校验长度，不会越界。
 //   6 = authack  [4..12) 虚拟呼号(8B) [12..14) uid [14] status（0=已有 1=新分配）
 //                uid = 0 表示"我不认识你，请重新认证"（服务端重启后会出现）
 #pragma once
@@ -33,6 +39,11 @@
 #define CW_TYPE_HEARTBEAT 4
 #define CW_TYPE_AUTH      5
 #define CW_TYPE_AUTHACK   6
+
+// occupy 一次最多报多少个格子。80 条 × 3 字节 = 240，加上 10 字节帧头是 250，
+// 稳稳落在接收方 320 字节的 UDP 缓冲里（cw_net 的 udp_recv_tick）。
+// 一条形态 stretcher：频段里同时有 80 个互不同频的台站才会截顶，那已经是 FX 了。
+#define CW_OCC_MAX_ITEMS  80
 
 // Global UID 长度：出厂 MAC 的 48 位放在前 6 字节，后 2 字节留作产线扩展（默认 0）。
 // 它是这块板子唯一不会变的东西，服务端拿它做"呼号永久绑定"的键。
@@ -90,3 +101,6 @@ int cw_proto_parse_down_key(const uint8_t *buf, size_t len, cw_frame_t *out);
 
 // 占用表帧的数据区长度是否足够（防越界读）。
 int cw_proto_occupy_ok(const uint8_t *buf, size_t len);
+// occupy 帧专用入口：它的长度跟着条目数走（最短 13 字节），比 CW_PROTO_LEN 短，
+// 通用入口 cw_proto_parse 会因为"帧不够长"把它拒掉，所以单独开一个。
+int cw_proto_parse_occupy(const uint8_t *buf, size_t len, cw_frame_t *out);

@@ -147,13 +147,13 @@ fi
 if (( DO_PUBLISH )); then
   say "发布到 CW 服务器"
   ./tools/publish-fw.sh | sed 's/^/    /'
-  SERVER_VER="$(curl -s --max-time 5 http://localhost:8080/fw/version | sed -nE 's/.*"version":"([^"]+)".*/\1/p')"
+  SERVER_VER="$(curl -s --max-time 5 http://localhost:21301/fw/version | sed -nE 's/.*"version":"([^"]+)".*/\1/p')"
   if [[ -n "${SERVER_VER}" ]]; then
     [[ "${SERVER_VER}" == "${NEW_VER}" ]] \
       && echo "    服务器已在提供 v${SERVER_VER}" \
       || warn "服务器提供的还是 v${SERVER_VER}（服务器在跑的话会自动读盘，稍等再查）"
   else
-    warn "服务器没在跑（localhost:8080 无响应），固件已落盘，等服务器起来就能 OTA"
+    warn "服务器没在跑（localhost:21301 无响应），固件已落盘，等服务器起来就能 OTA"
   fi
 fi
 

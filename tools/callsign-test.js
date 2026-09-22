@@ -7,7 +7,7 @@ const dgram = require('dgram');
 // 判成同一台设备（现实里两台设备也不会是同一个 IP）。A 走回环，B 走局域网地址。
 const LAN = process.argv[2] || '192.168.31.122';
 const hostA = '127.0.0.1', hostB = LAN;
-const PORT = 6000;
+const PORT = 21303;
 const CALL = 'TSTABC';
 const FREQ = 7190000;                 // 远离开通频段，纯自检用
 

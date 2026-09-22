@@ -8,7 +8,14 @@
 // 固件版本号，ABOUT ME 与 FIRMWARE 两页显示，OTA 时也用它跟服务器上的版本比对。
 // ★ 发新版时改这一处（tools/publish-fw.sh 会从这里抓版本号写进 version.json，
 //   不用手写两遍）。
-#define CW_FW_VERSION "1.1.6"
+// ★ OTA 只看"服务端版本 > 本机版本"，所以每次发版都必须抬版本号，否则服务端相同
+//   版本会被判定"无需升级"直接跳过。历史：1.1.7 → 1.1.8（本轮新端口）。
+// ★ 1.1.9：UDP 6000→21303、OTA 端口 8080→21301。因为老固件把端口写死在二进制里，
+//   服务端换端口后老设备连不上、也拿不到新固件，无法 OTA 自救 —— 这一版必须串口烧录，
+//   之后服务端升级再走 OTA 即可。
+//   改完记得两条：① 重新 idf.py build；② 把 build/*.bin 发布到服务器的 /fw/ 下
+//   （tools/publish-fw.sh 会顺便更新 version.json）。
+#define CW_FW_VERSION "1.1.9"
 
 void cw_radio_enter(void);
 void cw_radio_exit(void);
