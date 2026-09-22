@@ -807,11 +807,6 @@ static void prov_screen(void) {
     lv_obj_set_style_text_color(skip, lv_color_hex(0x7A8CA0), 0);
     lv_obj_set_pos(skip, 8, 278);
 
-    // lv_obj_t *sign = lv_label_create(scr);
-    // lv_label_set_text(sign, "Design by ZGF");
-    // lv_obj_set_style_text_font(sign, &lv_font_montserrat_14, 0);
-    // lv_obj_set_style_text_color(sign, lv_color_hex(0x4A5A6B), 0);
-    // lv_obj_set_pos(sign, 8, 292);
 
     lv_screen_load(scr);
     s_bl_last_ms = esp_timer_get_time() / 1000;

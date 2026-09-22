@@ -15,7 +15,7 @@
     <rect x="30" y="140" width="180" height="140" rx="14" fill="#FFFFFF" stroke="#27AE60" stroke-width="2.2"/>
     <rect x="42" y="154" width="156" height="94" rx="8" fill="#0B1219"/>
     <rect x="42" y="154" width="156" height="94" rx="8" fill="none" stroke="#27AE60" stroke-width="1.4"/>
-    <text x="120" y="176" font-size="11" font-weight="700" fill="#27AE60" text-anchor="middle">ONLINE</text>
+    <text x="120" y="176" font-size="11" font-weight="700" fill="#27AE60" text-anchor="middle">STATION</text>
     <text x="120" y="200" font-size="15" font-weight="600" fill="#E8F0F8" text-anchor="middle">7.024.200</text>
     <g fill="#2E86C1">
       <rect x="52" y="212" width="6" height="10" rx="1"/><rect x="61" y="208" width="6" height="14" rx="1"/>
@@ -36,7 +36,7 @@
     <rect x="300" y="140" width="180" height="140" rx="14" fill="#FFFFFF" stroke="#9AA9B8" stroke-width="2.2"/>
     <rect x="312" y="154" width="156" height="94" rx="8" fill="#0B1219"/>
     <rect x="312" y="154" width="156" height="94" rx="8" fill="none" stroke="#7A8CA3" stroke-width="1.4"/>
-    <text x="390" y="176" font-size="11" font-weight="700" fill="#7A8CA3" text-anchor="middle">OFFLINE</text>
+    <text x="390" y="176" font-size="11" font-weight="700" fill="#27AE60" text-anchor="middle">STATION</text>
     <text x="390" y="200" font-size="15" font-weight="600" fill="#C8D6E5" text-anchor="middle">7.024.200</text>
     <g fill="#3A4B5E">
       <rect x="322" y="212" width="6" height="10" rx="1"/><rect x="331" y="208" width="6" height="14" rx="1"/>
@@ -81,13 +81,15 @@
     <text x="523" y="188" font-size="11.5" font-weight="700" fill="#2E86C1" text-anchor="middle">长按 OK 2s</text>
     <text x="523" y="232" font-size="11" fill="#40546B" text-anchor="middle">进 / 退</text>
 
+    <text x="40" y="299" font-size="11" fill="#7A8CA3">状态行的 STATION：绿 = 连上服务器，黄 = 没连上。它跟能不能发报无关 —— 那看外圈颜色。</text>
+
     <!-- 底部要点 -->
     <rect x="40" y="306" width="700" height="132" rx="12" fill="#F4F7FA" stroke="#E3E8EF"/>
     <text x="64" y="334" font-size="12.5" font-weight="700" fill="#10233A">记住这三条就够了</text>
     <circle cx="70" cy="356" r="4" fill="#27AE60"/>
     <text x="86" y="360" font-size="11.5" fill="#40546B">在线：能收能发，屏幕外边框是绿色的；此时 OK 只属于电键，不存在「长按进菜单」这回事。</text>
     <circle cx="70" cy="382" r="4" fill="#7A8CA3"/>
-    <text x="86" y="386" font-size="11.5" fill="#40546B">离线：侧音、本地解码照常，只是不发到网上 —— 适合独自练手法。边框变灰、状态行显示 OFFLINE。</text>
+    <text x="86" y="386" font-size="11.5" fill="#40546B">离线：侧音、本地解码照常，只是不发到网上 —— 适合独自练手法。外圈边框变灰；状态行那个 STATION 可能仍是绿的 —— 它只讲服务器通不通。</text>
     <circle cx="70" cy="408" r="4" fill="#E67E22"/>
     <text x="86" y="412" font-size="11.5" fill="#40546B">改完参数回到主屏后仍是离线状态，需要再按一次 UP + DOWN 才会重新上线。</text>
   </g>

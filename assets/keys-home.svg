@@ -30,7 +30,7 @@
     <rect x="72" y="278" width="120" height="7" rx="3.5" fill="#2E86C1" opacity="0.9"/>
     <rect x="72" y="293" width="88" height="7" rx="3.5" fill="#3A4B5E"/>
     <rect x="72" y="316" width="172" height="6" rx="3" fill="#1B2430"/>
-    <text x="72" y="340" font-size="9" fill="#27AE60">ONLINE | VUMM5A</text>
+    <text x="72" y="340" font-size="9" fill="#27AE60">STATION | VUMM5A</text>
 
     <!-- 三键 -->
     <rect x="272" y="102" width="42" height="56" rx="10" fill="#FFFFFF" stroke="#B7C3D1" stroke-width="2"/>
@@ -94,7 +94,7 @@
     <rect x="40" y="492" width="700" height="90" rx="12" fill="#FFF4E5" stroke="#F0C36D" stroke-width="1.6"/>
     <path d="M64 520 l9 -16 l9 16 Z" fill="#E67E22"/>
     <text x="92" y="524" font-size="13.5" font-weight="700" fill="#7A4A10">在线时想进菜单？先切离线，再长按 OK</text>
-    <text x="64" y="546" font-size="11.5" fill="#7A4A10">1. 同时按 UP + DOWN，屏幕上边框由绿色变灰、状态行变成 OFFLINE，表示已离线；</text>
+    <text x="64" y="546" font-size="11.5" fill="#7A4A10">1. 同时按 UP + DOWN，屏幕外圈边框由绿色变灰，表示已离线（状态行的 STATION 不变）；</text>
     <text x="64" y="564" font-size="11.5" fill="#7A4A10">2. 再长按 OK 满 2 秒，进入 SETTINGS 菜单；</text>
     <text x="64" y="582" font-size="11.5" fill="#7A4A10">3. 菜单里长按 OK 2 秒可逐级返回，回到主屏后再 UP + DOWN 重新上线。</text>
   </g>

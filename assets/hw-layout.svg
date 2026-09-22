@@ -32,7 +32,7 @@
     <rect x="78" y="248" width="126" height="7" rx="3.5" fill="#2E86C1" opacity="0.9"/>
     <rect x="78" y="264" width="92" height="7" rx="3.5" fill="#3A4B5E"/>
     <rect x="78" y="286" width="172" height="6" rx="3" fill="#1B2430"/>
-    <text x="78" y="310" font-size="9" fill="#27AE60">ONLINE | VUMM5A</text>
+    <text x="78" y="310" font-size="9" fill="#27AE60">STATION | VUMM5A</text>
 
     <!-- 对齐辅助虚线 -->
     <g stroke="#B7C3D1" stroke-width="1" stroke-dasharray="3 3" fill="none">

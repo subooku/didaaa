@@ -35,6 +35,7 @@
 #include "freertos/queue.h"
 #include "freertos/task.h"
 #include "lvgl.h"
+#include "src/misc/lv_text.h"   // lv_text_get_size：按实际像素量文本，用来给换行的地址算落点
 
 #include <math.h>
 #include <stdio.h>
@@ -929,7 +930,7 @@ static void build_main(void) {
         lv_label_set_long_mode(s_lbl_st[i], LV_LABEL_LONG_MODE_DOTS);
     }
 
-    // 状态行用 recolor：ONLINE / OFFLINE / NET FAIL / IDLE 四个词各给一个颜色，
+    // 状态行用 recolor：STATION / NET FAIL / IDLE 三个词各给一个颜色，
     // 后面的 "| 呼号" 保持默认灰。整行染一个色会让呼号跟着变色，反而看不出主次。
     s_lbl_net = make_label(s_main, SAFE, 252, CONTENT_W, "Wi-Fi...", &lv_font_montserrat_14, 0x7A8CA0);
     lv_label_set_recolor(s_lbl_net, true);
@@ -1004,7 +1005,7 @@ static void build_menu(void) {
     lv_obj_update_layout(s_menu_list);
 
     // 底部署名：列表区收在 y=286，292 起这一段是空的。
-    lv_obj_t *sign = make_label(s_menu, 0, 292, SCR_W, "Design by ZGF",
+    lv_obj_t *sign = make_label(s_menu, 0, 292, SCR_W, "Design by subooku",
                                 &lv_font_montserrat_14, 0x4A5A6B);
     lv_obj_set_style_text_align(sign, LV_TEXT_ALIGN_CENTER, 0);
 }
@@ -1300,13 +1301,18 @@ static void refresh_main(void) {
         lv_label_set_text(s_lbl_st[r], line);
     }
 
-    const char *ns = s_net_state == CW_NET_LINK ? "ONLINE" :
-                     s_net_state == CW_NET_WIFI ? "OFFLINE" :
+    // ★ 这里一律写 STATION，不写 ONLINE / OFFLINE。
+    //   那两个词会被当成"我上没上线、能不能发报"，而能不能发报其实看的是屏幕外圈
+    //   （UP+DOWN 那个开关）。状态行讲的是另一件事：设备到服务器这条路通不通。
+    //   两个词撞名，排查"为什么发不出去"时能把人带到沟里，所以统一成 STATION，
+    //   只用颜色区分通（绿）/ 没通（黄）。
+    const char *ns = s_net_state == CW_NET_LINK ? "STATION" :
+                     s_net_state == CW_NET_WIFI ? "STATION" :
                      s_net_state == CW_NET_ERROR ? "NET FAIL" : "IDLE";
-    // 四个状态四个颜色：在线绿、离线灰（退到背景里，不抢注意力）、
-    // 网络故障红（这是要人马上处理的）、IDLE 用最暗的灰蓝（还没起来，不重要）。
+    // 连上服务器绿、没连上黄（要人留意，但不像红那样是"坏了"）、
+    // 网络故障红（这是要马上处理的）、IDLE 用最暗的灰蓝（还没起来，不重要）。
     const char *nsc = s_net_state == CW_NET_LINK  ? "27AE60" :
-                      s_net_state == CW_NET_WIFI  ? "8FA3B8" :
+                      s_net_state == CW_NET_WIFI  ? "F1C40F" :
                       s_net_state == CW_NET_ERROR ? "E74C3C" : "5E7185";
     const char *tail = s_chat[0] ? s_chat : top_call_dash();
     // LVGL 的 recolor 写法是 "#RRGGBB 文本#"，井号之前的那段颜色码不显示，
@@ -1444,15 +1450,26 @@ static void adj_btn_show(const char *l0, const char *l1, int focus) {
     }
 }
 
+// 一段文本按给定字体、限定宽度排下来要占多高（多行的话含行间距）。
+// 地址长度不定（最长 64），行数也就不定 —— 下面那行提示的位置必须量出来，写死就会重叠。
+static int text_h(const char *s, const lv_font_t *f, int32_t max_w) {
+    lv_point_t sz;
+    lv_text_get_size(&sz, s, f, 0, 0, max_w, LV_TEXT_FLAG_NONE);
+    return sz.y;
+}
+
 static void refresh_adj(void) {
     char v[80];                 // 服务器地址最长 64（CW_PROV_SRV_MAX），前缀 + 端口还剩点余量
     int pct = 0;
     // 默认是"数值 + 进度条"那套；Wi-Fi 确认页换成两个按钮，STEP / BL TIMEOUT
     // 换成列表。每轮都先复位，切到别的菜单项时才不会残留上一页的状态。
     v[0] = '\0';
+    // 基站页会按地址实际占高挪按钮，这里每轮先把位置复位，
+    // 切到别的页时才不会带着上一页挪过的按钮。
     for (int i = 0; i < 2; i++) {
         if (!s_adj_btn[i]) continue;
         lv_obj_add_flag(s_adj_btn[i], LV_OBJ_FLAG_HIDDEN);
+        lv_obj_set_pos(s_adj_btn[i], SAFE + i * 110, 96);
     }
     for (int i = 0; i < ADJ_LIST_MAX; i++) {
         if (!s_adj_list[i]) continue;
@@ -1515,20 +1532,31 @@ static void refresh_adj(void) {
         lv_label_set_text(s_adj_note, "Idle time before the screen dims.\nON keeps it lit (uses more battery).");
         break;
     }
-    case ADJ_NET:
+    case ADJ_NET: {
         // 基站页：上面那行大字是当前服务器地址，下面左"更改" / 右"确认"。
         // 改地址要重启进配网，跟 WI-FI SETUP 一样不该"选中即执行"，所以做成按钮页。
+        // ★ 地址最长 64（CW_PROV_SRV_MAX）："cw_station.bubblegear.xyz" 这种长域名
+        //   在 20 号字下要 270px，而取值区只有 212px，必然换两行 —— 换行那一截正好
+        //   压在提示上。字号不动（大字才看得清），只把提示和按钮按实际占高往下推。
+        const char *srv = cw_prov_server_ip();
+        int vh = text_h(srv, &lv_font_montserrat_20, CONTENT_W);
+        lv_obj_set_style_text_align(s_adj_value, LV_TEXT_ALIGN_CENTER, 0);
+        snprintf(v, sizeof(v), "%s", srv);
         adj_btn_show("SET", "OK", s_srv_focus);
         lv_obj_add_flag(s_adj_bar, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_set_style_text_align(s_adj_value, LV_TEXT_ALIGN_CENTER, 0);
-        snprintf(v, sizeof(v), "%s", cw_prov_server_ip());
-        lv_label_set_text(s_adj_note,
-                          s_srv_focus == 0
-                              ? "Restart into the setup page."
-                              : "Keep this address and go back.");
+        const char *note = s_srv_focus == 0 ? "Restart into the setup page."
+                                            : "Keep this address and go back.";
+        lv_label_set_text(s_adj_note, note);
         lv_obj_set_style_text_align(s_adj_note, LV_TEXT_ALIGN_CENTER, 0);
-        lv_obj_set_pos(s_adj_note, SAFE, 60);   // 数值占了 30..54，说明紧跟其后
+        int note_y = 30 + vh + 8;              // 地址占了 30..(30+vh)，提示跟在它下面
+        lv_obj_set_pos(s_adj_note, SAFE, note_y);
+        int btn_y = note_y + text_h(note, &lv_font_montserrat_14, CONTENT_W) + 10;
+        if (btn_y < 96) btn_y = 96;            // 短地址时保持原位，别让版面往上蹿
+        for (int i = 0; i < 2; i++) {
+            if (s_adj_btn[i]) lv_obj_set_pos(s_adj_btn[i], SAFE + i * 110, btn_y);
+        }
         break;
+    }
     case ADJ_WIFI: {
         // 确认页：进配网要整机重启，代价不小，不该像改音量那样"选中即执行"。
         // 这里把数值与进度条藏掉，摆出左右两个按钮，焦点那颗填成实心琥珀。
@@ -1608,7 +1636,7 @@ static void refresh_adj(void) {
         snprintf(av[0], sizeof(av[0]), "%s", cw_net_device_id_hex());
         snprintf(av[1], sizeof(av[1]), "%s", CW_FW_VERSION);
         snprintf(av[2], sizeof(av[2]), "%s", cw_net_mac_str());
-        snprintf(av[3], sizeof(av[3]), "ZGF");
+        snprintf(av[3], sizeof(av[3]), "subooku");
         snprintf(av[4], sizeof(av[4]), "1422361371");
         snprintf(av[5], sizeof(av[5]), "1098596164");
         // 完整仓库地址。★ 整串在 montserrat_14 下有 200px，取值列只有 132px，
@@ -1704,7 +1732,9 @@ static void refresh_adj(void) {
         lv_label_set_text(s_adj_note, "Selected in menu: restart the device.");
         break;
     default:
-        snprintf(v, sizeof(v), "%s", s_net_state == CW_NET_LINK ? "ONLINE" : "OFFLINE");
+        // 菜单里没有颜色可用，得靠文字区分；同样不写 ONLINE/OFFLINE，理由见状态行那段。
+        snprintf(v, sizeof(v), "%s",
+                 s_net_state == CW_NET_LINK ? "STATION UP" : "STATION DOWN");
         pct = s_net_state == CW_NET_LINK ? 100 : 0;
         lv_label_set_text(s_adj_note, "Network status is read-only.");
         break;

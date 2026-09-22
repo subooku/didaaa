@@ -12,13 +12,21 @@
 //   版本会被判定"无需升级"直接跳过。历史：1.1.7 → 1.1.8（本轮新端口）。
 // ★ 1.1.9：UDP 6000→21306、OTA 端口 8080→21301。因为老固件把端口写死在二进制里，
 //   服务端换端口后老设备连不上、也拿不到新固件，无法 OTA 自救 —— 那一版只能串口烧录。
+// ★ 1.1.13：BASE STATION 页的地址保持 20 号大字不变 —— 1.1.12 试过按长度自动降字号
+//   （20→16→14），字缩到 14 是能一行放下，但跟别页的取值不是一个量级，看着突兀。
+//   改成字号不动、接受长域名换两行，只把提示和按钮按地址的实际占高往下挪，避免压字。
+// ★ 1.1.11：状态行不再写 ONLINE / OFFLINE —— 那两个词会被理解成"我上没上线、能不能
+//   发报"，而能不能发报看的是屏幕外圈（UP+DOWN 那个开关），两件事撞名，排查"为什么
+//   发不出去"时特别容易误判。现在统一写 STATION，只用颜色区分到服务器通不通：
+//   绿 = 连上了（UDP 已注册 + MQTT 已连），黄 = 没连上。菜单里没有颜色，写作
+//   STATION UP / STATION DOWN。
 // ★ 1.1.10：UDP 21306→21303（与服务端对齐）。
 //   ⚠ 端口必须改 sdkconfig 里的 CONFIG_CW_UDP_PORT —— 只改 Kconfig.projbuild 的 default
 //   不生效：sdkconfig 里已有该键时 default 会被忽略。本版之前就栽在这里（default 写了
 //   21303，编进固件的还是 21306，设备一直连不上）。改完看 build/config/sdkconfig.h 复核。
 //   改完记得两条：① 重新 idf.py build；② 把 build/*.bin 发布到服务器的 /fw/ 下
 //   （tools/publish-fw.sh 会顺便更新 version.json）。
-#define CW_FW_VERSION "1.1.10"
+#define CW_FW_VERSION "1.1.13"
 
 void cw_radio_enter(void);
 void cw_radio_exit(void);

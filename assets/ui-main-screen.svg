@@ -62,7 +62,7 @@
     <text x="62" y="366" font-size="11" fill="#8FA3B8">no station on this freq</text>
 
     <!-- 状态行 -->
-    <text x="62" y="390" font-size="10.5" fill="#27AE60">ONLINE | VUMM5A</text>
+    <text x="62" y="390" font-size="10.5" fill="#27AE60">STATION | VUMM5A</text>
 
     <!-- ===== 右侧标注 ===== -->
     <g stroke="#C3CDD9" stroke-width="1.2" fill="none">
@@ -99,7 +99,7 @@
     <text x="342" y="372" font-size="11" fill="#40546B">按 S 值排序最多 3 行，只列真正同频（±100 Hz）的台站</text>
 
     <text x="342" y="396" font-size="12.5" font-weight="700" fill="#10233A">网络状态行</text>
-    <text x="342" y="412" font-size="11" fill="#40546B">ONLINE / Wi-Fi only / NET FAIL / OFFLINE + 当前呼号</text>
+    <text x="342" y="412" font-size="11" fill="#40546B">STATION（绿=服务器已通 / 黄=未通）/ NET FAIL / IDLE + 当前呼号</text>
 
     <text x="342" y="436" font-size="12.5" font-weight="700" fill="#27AE60">外圈边框</text>
     <text x="342" y="452" font-size="11" fill="#40546B">绿色 = 在线（会发到网上），灰色 = 离线（独自练习）</text>

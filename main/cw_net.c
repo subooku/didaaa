@@ -359,7 +359,8 @@ static void mqtt_start(void) {
     // ★ 这里填 hostname + port，而不是拼好的 URI —— 踩过的坑：
     //   域名里带下划线（cw_station.bubblegear.xyz）时，esp-mqtt 的 URI 解析器直接报
     //   "Error parse uri (1)" 并让 esp_mqtt_client_init 返回 NULL，整个信令通道就没了。
-    //   而 UDP 那一路走 getaddrinfo 是容忍下划线的，于是出现"认证通过但永远 OFFLINE"的怪象。
+    //   而 UDP 那一路走 getaddrinfo 是容忍下划线的，于是出现"认证通过了但信令通道始终
+//   起不来"的怪象 —— 状态行的 STATION 一直是黄的。
     //   直接给 hostname 就绕开了 URI 解析这一步，底下照样是 getaddrinfo。
     //   （下划线主机名本身不合规：RFC 1123 只允许字母、数字和连字符，建议域名改用连字符。）
     esp_mqtt_client_config_t cfg = {
