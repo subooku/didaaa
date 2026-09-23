@@ -49,6 +49,11 @@ static const char *TAG = "cw_net";
 // 中间全被吞掉、末值要等下一次心跳（5 s）—— 手感上就是"松手了频率才过去"。
 // 现在改成 150：连发 110 ms 一格，大约每格都能报一次，最多隔一格。
 #define CW_PRESENCE_MIN_MS    150
+// 运行期巡检的容忍窗口：链路断了这么久还不回来，就当这一轮废了、整轮重来。
+// 60 s 是留给 Cloudflare 的 —— 一次完整的 TLS 握手实测就要 7~30 s，给短了会在网络
+// 只抖了一下的时候反复推倒重来，反而更糟。只用于 WebSocket 模式（UDP 那一路没有
+// 可靠的可达性信号：socket 创建出来就永远"就绪"，看不出服务器还在不在）。
+#define CW_LINK_LOST_MS       60000
 // 注册成功后仍然定期补发 hello。不是为了保活（心跳在做），而是给服务端一个把呼号
 // 改回来的机会：撞名时它会把我的名字改成 GH1BHU2 这种，等撞的那个走了也改不回来 ——
 // 名字是在 hello 里认的，不发 hello 就永远纠正不了。20 s 一次，一帧而已。
@@ -647,7 +652,7 @@ static bool dns_ensure(const char *host) {
     //   （公共 DNS 在国内往往更慢，反而更连不上）。
     for (int i = 0; i < 3; i++) {
         if (probe_resolve(host, &ip)) {
-            ESP_LOGI(TAG, "DNS 解析 %s -> " IPSTR "（第 %d 次，路由器下发的 DNS）", host,
+            ESP_LOGD(TAG, "DNS 解析 %s -> " IPSTR "（第 %d 次，路由器下发的 DNS）", host,
                      IP2STR((const ip4_addr_t *)&ip), i + 1);
             return true;
         }
@@ -986,17 +991,20 @@ static void dev_recv_tick(void) {
     handle_dev_frame(buf, (size_t)n);
 }
 
-static void net_task(void *arg) {
-    (void)arg;
+// 一次完整的联网尝试：起 Wi-Fi → 校准 DNS → 建链路 → 认证 → 起 MQTT → 主循环。
+// 返回 true  = 会话是"正常收摊"（s_run 被外面拉低，或者压根没配基站），外层就此为止；
+// 返回 false = 某一环失败，整轮可以重来。
+// ★ 拆成两个函数而不是在原来的长流程里加 goto：失败路径上每一步都得把已经占住的
+//   资源还回去（destroy MQTT / close socket / 停 WS），挪到一处统一做，主流程也不用
+//   被一堆"搬家用的"分支切开。
+static bool net_run(void) {
     cw_radio_on_net_state(CW_NET_IDLE);
 
     esp_err_t e = wifi_start();
     if (e != ESP_OK) {
         ESP_LOGE(TAG, "Wi-Fi 启动失败: %s", esp_err_to_name(e));
         cw_radio_on_net_state(CW_NET_ERROR);
-        s_run = false;
-        vTaskDelete(NULL);
-        return;
+        return false;
     }
     cw_radio_on_net_state(CW_NET_WIFI);
     e = wifi_wait(20000);
@@ -1012,9 +1020,7 @@ static void net_task(void *arg) {
             vTaskDelay(pdMS_TO_TICKS(2500));     // 留点时间让上面那行状态刷到屏上
             esp_restart();
         }
-        s_run = false;
-        vTaskDelete(NULL);
-        return;
+        return false;
     }
     if (s_ws_en) {
         ESP_LOGI(TAG, "Wi-Fi 就绪，服务器 %s://%s:%d（键控走 WebSocket）",
@@ -1028,13 +1034,12 @@ static void net_task(void *arg) {
     // 没配基站（出厂 / 恢复出厂后 BASE STATION 一页就是 None）：Wi-Fi 通着但没有服务器
     // 可连。空串拿去解析会得到 255.255.255.255 这种假地址（UDP 全发到广播上），必须在
     // 进 resolve_server() 之前拦掉，然后停在这儿，状态行显示 NET FAIL 提示"还没配基站"。
+    // ★ 这种情况重试也没用（缺的是地址，不是连接），所以算"正常收摊"，不进重连循环。
     if (!s_srv_host[0]) {
         ESP_LOGW(TAG, "未配置基站服务器：不做 UDP/MQTT，保持离线"
                       "（菜单 BASE STATION → CHANGE 可以填）");
         cw_radio_on_net_state(CW_NET_ERROR);
-        s_run = false;
-        vTaskDelete(NULL);
-        return;
+        return true;
     }
 
     // ★ 先校准 DNS（1.1.15）：esp-tls 只丢一句 "getaddrinfo 202"，分不清是 DNS 服务器
@@ -1044,30 +1049,27 @@ static void net_task(void *arg) {
 
     if (s_ws_en) {
         // WebSocket 模式：DNS 解析与断线重连都由组件自己管，这里只管等它连上。
-        // 等到 15 s 是给 CF 那边 TLS 握手留的余量；连不上就 NET FAIL，
-        // 之后的循环会继续发 auth，组件重连成功后自然就通了。
-        if (!ws_start()) {
-            cw_radio_on_net_state(CW_NET_ERROR);
-            s_run = false;
-            vTaskDelete(NULL);
-            return;
-        }
         // ★ 等到 30 s 而不是 15 s：实测从开机到握手成功要 30 s 左右（DNS 冷启动 +
         //   TLS 握手 + Cloudflare 边缘节点首次接入）。以前等 15 s 就判失败、net_task
         //   直接退出 —— 结果组件在 30 s 时其实连上了，却已经没人做认证和心跳了，
-        //   屏幕一直是 NET FAIL。WS 组件自己会重连，这里只要给足耐心就行。
-        for (int i = 0; i < 300 && !s_ws_up && s_run; i++) {
-            if (i == 60 && !s_ws_up) dns_probe(s_ws_host);
-            vTaskDelay(pdMS_TO_TICKS(100));
-        }
-        if (!s_ws_up) {
-            dns_probe(s_ws_host);
-            ESP_LOGE(TAG, "WebSocket 连不上：%s://%s:%d", s_ws_tls ? "wss" : "ws",
-                     s_ws_host, s_ws_port);
+        //   屏幕一直是 NET FAIL。
+        if (!ws_start()) {
             cw_radio_on_net_state(CW_NET_ERROR);
-            s_run = false;
-            vTaskDelete(NULL);
-            return;
+            return false;
+        }
+        for (int i = 0; i < 300 && !s_ws_up && s_run; i++) vTaskDelay(pdMS_TO_TICKS(100));
+        if (!s_run || !s_ws_up) {
+            if (!s_ws_up) {
+                dns_probe(s_ws_host);       // 连不上时把解析情况打出来：分得清 DNS 还是连通性
+                ESP_LOGE(TAG, "WebSocket 连不上：%s://%s:%d", s_ws_tls ? "wss" : "ws",
+                         s_ws_host, s_ws_port);
+            }
+            // 组件自己会重连（3 s 一次），但既然要整轮重来，就把这一条彻底收掉：
+            // 留着它，下一轮的 ws_start() 会再开一条，两条 TLS 抢那点内存 —— 上次
+            // MQTT 建第三条连接时的 ALLOC_FAILED 就是这么来的。
+            ws_stop();
+            cw_radio_on_net_state(CW_NET_ERROR);
+            return false;
         }
     } else {
         memset(&s_srv, 0, sizeof(s_srv));
@@ -1084,18 +1086,14 @@ static void net_task(void *arg) {
         if (!ok) {
             ESP_LOGE(TAG, "服务器地址解析失败：%s", s_srv_host);
             cw_radio_on_net_state(CW_NET_ERROR);
-            s_run = false;
-            vTaskDelete(NULL);
-            return;
+            return false;
         }
 
         s_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
         if (s_sock < 0) {
             ESP_LOGE(TAG, "UDP socket 创建失败");
             cw_radio_on_net_state(CW_NET_ERROR);
-            s_run = false;
-            vTaskDelete(NULL);
-            return;
+            return false;
         }
         // 收包超时 200 ms：这个循环同时兼着"补发调频末值"的活，
         // 超时 1 s 的话末值要拖 1 s 才报到服务端。空转代价只是每秒多次 recvfrom 超时。
@@ -1118,23 +1116,39 @@ static void net_task(void *arg) {
                 cw_proto_build_auth(frame, s_guid, s_freq);
                 dev_send(frame);
                 last_auth = t;
-                ESP_LOGI(TAG, "请求认证 Global UID %s", s_guid_hex);
+                // ★ 用 D 而不是 I：认证没通过之前这一句每 3 秒一行，服务器不在时
+                //   串口全是它，反而把真正有用的报错淹了。
+                ESP_LOGD(TAG, "请求认证 Global UID %s", s_guid_hex);
             }
         }
     }
     if (!s_run) {                     // 退出中：直接收摊
         if (s_sock >= 0) { close(s_sock); s_sock = -1; }
         ws_stop();
-        s_task = NULL;
-        vTaskDelete(NULL);
-        return;
+        return true;
     }
     mqtt_start();
 
+    bool retry = false;
     int64_t last_hb = 0, last_hello = -10000, last_rehello = 0, now;
+    // 运行期巡检的基准：最近一次"链路确实可用"的时刻。
+    int64_t last_link_ok = esp_timer_get_time() / 1000;
     while (s_run) {
         dev_recv_tick();
         now = esp_timer_get_time() / 1000;
+        // ★ 运行期巡检（1.1.17）：组件的重连只负责 TCP/TLS 那一层，遇到"TCP 连得上、
+        //   组件也自认为在线，但链路事实上断了"（NAT 老化、内存不足把 socket 掐了、
+        //   Cloudflare 长时间 522）就没人管了 —— 屏幕还是绿的，键控全丢。
+        //   WebSocket 模式下单独盯着 dev_ready()：连不上就计时，超过 CW_LINK_LOST_MS
+        //   整轮重来。（UDP 模式没有可靠的可达性信号 —— socket 一直"就绪"，
+        //   所以这一路实际上只在 WS 模式下生效。）
+        if (dev_ready()) last_link_ok = now;
+        else if (s_ws_en && now - last_link_ok > CW_LINK_LOST_MS) {
+            ESP_LOGW(TAG, "链路中断已超 %d 秒，重来一轮", (int)(CW_LINK_LOST_MS / 1000));
+            cw_radio_on_net_state(CW_NET_ERROR);
+            retry = true;
+            break;
+        }
         // 连发调频的末值补发：手停下来 150 ms 后一定报一次，
         // 否则服务端停在倒数第二个上报值上（被节流挡掉的那一格）。
         if (s_tune_dirty && now - s_tune_last > CW_PRESENCE_MIN_MS) {
@@ -1168,6 +1182,33 @@ static void net_task(void *arg) {
     if (s_mqtt) { publish_presence(0); esp_mqtt_client_stop(s_mqtt); esp_mqtt_client_destroy(s_mqtt); s_mqtt = NULL; }
     if (s_sock >= 0) { close(s_sock); s_sock = -1; }
     ws_stop();
+    return !retry;
+}
+
+// ★ NET FAIL 之后的重连就编排在这里（1.1.17）：以前任何一环失败，net_task 都会
+//   vTaskDelete 自己 —— 屏幕上 NET FAIL 之后设备就成了半个砖，只有手动重启才会再试，
+//   而服务器那边的抖动（上一轮抓到过 CF 回 522、HTTPS 延迟在 0.36~4.5 s 之间跳）
+//   本来几十秒后就自己恢复。现在失败了就隔 CONFIG_CW_RETRY_SEC 秒再来一轮，
+//   起不了 Wi-Fi / DNS 解不开 / WebSocket 建不起来，统统适用。
+static void net_task(void *arg) {
+    (void)arg;
+    int attempt = 0;
+    while (s_run) {
+        if (net_run()) break;               // 正常运行到收摊（多半是 s_run 被拉低）
+        if (!s_run) break;
+        ESP_LOGW(TAG, "联网失败（第 %d 次），%d 秒后重连", ++attempt, CONFIG_CW_RETRY_SEC);
+        cw_radio_on_net_state(CW_NET_ERROR);
+        // 切片等待而不是一觉睡死：收到 stop（例如 OTA 前的 link_pause）要立刻能退，
+        // 否则那边会干等 8 s 超时。
+        for (int i = 0; i < CONFIG_CW_RETRY_SEC * 10 && s_run; i++)
+            vTaskDelay(pdMS_TO_TICKS(100));
+        // ★ 新的一轮 = 一条新连接：服务端那边的台账（uid / 认证状态）已经随旧连接一起
+        //   没了，这几个位不清的话，新任务会以为自己还认证着，直接跳过 auth 发心跳。
+        s_uid = 0;
+        s_seq = 0;
+        s_authed = false;
+        s_reauth_ms = 0;
+    }
     s_task = NULL;
     vTaskDelete(NULL);
 }
@@ -1217,6 +1258,40 @@ esp_err_t cw_net_start(uint32_t freq, int wpm) {
         return ESP_ERR_NO_MEM;
     }
     return ESP_OK;
+}
+
+// ---------------------------------------------------------------------------
+// ★ 链路暂停/恢复：OTA 专用
+// ---------------------------------------------------------------------------
+// ESP32-C3 上容不下三条 TLS 同时在场。稳态时（WS 键控 + MQTT 信令都连着）堆只剩
+// 十几 KB，而一条新的 mbedTLS 握手开口就要二十几 KB —— 实测第三条连接在建的时候
+// 连 4770 字节的 alloc 都失败：
+//     E esp-tls-mbedtls: mbedtls_ssl_handshake returned -0x7F00   ← ALLOC_FAILED
+// 于是 OTA 拉版本就停在 "SERVER UNREACHABLE"，看上去像服务器不通，其实是内存不够。
+// 办法是拉固件前先把那两条连接收掉，用完再拉回来。注意这里**不能**碰 Wi-Fi，
+// 否则固件就没法从网上下来了 —— 所以是这一对函数，不是 cw_net_stop()。
+bool cw_net_link_pause(void) {
+    if (!s_task) return false;              // 本来就没在跑（离线/没配基站），不用管
+    s_run = false;
+    // 有界等待：net_task 下一次循环就退出并 destroy MQTT / close socket / 停 WS。
+    for (int i = 0; i < 80 && s_task; i++) vTaskDelay(pdMS_TO_TICKS(100));
+    if (s_task) ESP_LOGW(TAG, "链路暂停超时：任务没能退出，内存可能没还回来");
+    return true;
+}
+
+void cw_net_link_resume(void) {
+    if (s_task) return;
+    // 这几个状态位不清的话，新任务会以为自己还认证着 —— 认证是服务端那边的台账，
+    // 连接一断就没了，必须重新走一遍 auth。wifi_start() 本身是幂等的（已 start 会跳过）。
+    s_uid = 0;
+    s_seq = 0;
+    s_authed = false;
+    s_reauth_ms = 0;
+    s_run = true;
+    if (xTaskCreate(net_task, "cw_net", 4096, NULL, 5, &s_task) != pdPASS) {
+        s_task = NULL;
+        ESP_LOGE(TAG, "链路恢复失败：起不了网络任务");
+    }
 }
 
 void cw_net_stop(void) {

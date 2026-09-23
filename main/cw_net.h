@@ -59,6 +59,11 @@ bool        cw_net_fw_tls(void);        // 固件下载走 https 吗（wss:// �
 
 esp_err_t cw_net_start(uint32_t freq, int wpm);
 void     cw_net_stop(void);
+// ★ 给 OTA 专用：把键控/信令那两条连接收掉腾内存，但**保留 Wi-Fi**。
+//   直接调 cw_net_stop() 不行 —— 它连 Wi-Fi 一起 deinit 了，固件反而拉不下来。
+//   pause 返回 true 表示"原本有一条在跑，事后该 resume"。
+bool     cw_net_link_pause(void);
+void     cw_net_link_resume(void);
 // 不联网、只把呼号与服务器地址取好（跳过配网后离线开机时用）。
 void     cw_net_ids_init(void);
 

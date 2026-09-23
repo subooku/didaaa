@@ -64,6 +64,20 @@ menu "CW Radio"
             把 CW_TLS 打开后这一项不再生效（改走标准 HTTPS 的 443）。
             走明文 HTTP：局域网内够用，公网请开 CW_TLS。
 
+    config CW_RETRY_SEC
+        int "Reconnect interval after NET FAIL (seconds)"
+        range 5 600
+        default 15
+        help
+            联网失败后的重连间隔（秒）。以前任何一环失败（起不了 Wi-Fi、域名解不开、
+            WebSocket 握手超时）网络任务都会自己退出：屏幕上一旦 NET FAIL，设备就
+            成了半个砖，只有手动重启才会再试 —— 而服务器侧的抖动（实测抓到过
+            Cloudflare 回 522，HTTPS 延迟在 0.36~4.5 s 之间跳）往往几十秒后就恢复。
+            现在失败了就每隔这么多秒整轮重试一次。
+
+            太短没意义：经 Cloudflare 的一次 TLS 握手实测就要 7~11 s，甚至 30 s，
+            5~10 s 会在连接还没建立时就推倒重来；太长则恢复得慢。15 s 是折中。
+
     config CW_CALLSIGN
         string "Callsign"
         default ""

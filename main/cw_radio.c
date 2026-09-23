@@ -1450,13 +1450,14 @@ static void adj_btn_show(const char *l0, const char *l1, int focus) {
     }
 }
 
-// 一段文本按给定字体、限定宽度排下来要占多高（多行的话含行间距）。
-// 地址长度不定（最长 64），行数也就不定 —— 下面那行提示的位置必须量出来，写死就会重叠。
-static int text_h(const char *s, const lv_font_t *f, int32_t max_w) {
-    lv_point_t sz;
-    lv_text_get_size(&sz, s, f, 0, 0, max_w, LV_TEXT_FLAG_NONE);
-    return sz.y;
-}
+// BASE STATION（ADJ_NET）那页的固定版式：地址区一律按三行留位。
+// 以前是"先看地址实际排几行，再把提示和按钮按这个高度往下推"（自适应）—— 版面跟着
+// 内容长短来回晃：换一个短地址，整页元素就集体往上蹿。现在行数写死，地址短就留白，
+// 位置永远稳定。三行够放下最长的地址：cw_station.bubblegear.xyz 这种在 20 号字、
+// CONTENT_W 宽度下正好是三行。
+#define ADJ_NET_ADDR_LINES  3
+// 提示文字的固定行数。那两句英文在 14 号字下各占两行，只给一行的话第二行会压到按钮上。
+#define ADJ_NET_NOTE_LINES  2
 
 static void refresh_adj(void) {
     char v[80];                 // 服务器地址最长 64（CW_PROV_SRV_MAX），前缀 + 端口还剩点余量
@@ -1535,11 +1536,9 @@ static void refresh_adj(void) {
     case ADJ_NET: {
         // 基站页：上面那行大字是当前服务器地址，下面左"更改" / 右"确认"。
         // 改地址要重启进配网，跟 WI-FI SETUP 一样不该"选中即执行"，所以做成按钮页。
-        // ★ 地址最长 64（CW_PROV_SRV_MAX）："cw_station.bubblegear.xyz" 这种长域名
-        //   在 20 号字下要 270px，而取值区只有 212px，必然换两行 —— 换行那一截正好
-        //   压在提示上。字号不动（大字才看得清），只把提示和按钮按实际占高往下推。
+        // ★ 版面是固定的（ADJ_NET_ADDR_LINES / ADJ_NET_NOTE_LINES），跟地址长短无关：
+        //   以前按实际行数推位置，长地址换行会把提示顶掉、短地址又让整页往上蹿。
         const char *srv = cw_prov_server_ip();
-        int vh = text_h(srv, &lv_font_montserrat_20, CONTENT_W);
         lv_obj_set_style_text_align(s_adj_value, LV_TEXT_ALIGN_CENTER, 0);
         snprintf(v, sizeof(v), "%s", srv);
         adj_btn_show("SET", "OK", s_srv_focus);
@@ -1548,10 +1547,10 @@ static void refresh_adj(void) {
                                             : "Keep this address and go back.";
         lv_label_set_text(s_adj_note, note);
         lv_obj_set_style_text_align(s_adj_note, LV_TEXT_ALIGN_CENTER, 0);
-        int note_y = 30 + vh + 8;              // 地址占了 30..(30+vh)，提示跟在它下面
+        const int addr_h = ADJ_NET_ADDR_LINES * lv_font_montserrat_20.line_height;
+        const int note_y  = 30 + addr_h + 8;      // 地址占 30..(30+addr_h)，提示紧跟其后
         lv_obj_set_pos(s_adj_note, SAFE, note_y);
-        int btn_y = note_y + text_h(note, &lv_font_montserrat_14, CONTENT_W) + 10;
-        if (btn_y < 96) btn_y = 96;            // 短地址时保持原位，别让版面往上蹿
+        const int btn_y = note_y + ADJ_NET_NOTE_LINES * lv_font_montserrat_14.line_height + 10;
         for (int i = 0; i < 2; i++) {
             if (s_adj_btn[i]) lv_obj_set_pos(s_adj_btn[i], SAFE + i * 110, btn_y);
         }
@@ -1849,7 +1848,9 @@ static void tx_emit(char ch, void *user) {
     (void)user;
     // 本地回显走的是和收报同一套判定逻辑，日志留一行便于核对"手敲的节奏"与
     // "解出来的字符"是否对得上——点划判定出问题时这是唯一的现场证据。
-    ESP_LOGI(TAG, "TX '%c'", ch);
+    // ★ 用 D 而不是 I：每敲一个字符就来一行，正常通联时串口会被它刷满，而稳态下
+    //   这行字毫无用处。要查点划就把 CONFIG_LOG_MAXIMUM_LEVEL 抬到 DEBUG 重编一次。
+    ESP_LOGD(TAG, "TX '%c'", ch);
     if (bsp_lvgl_lock(100)) {
         buf_push(s_txbuf, sizeof(s_txbuf), ch);
         if (s_scr == SCR_MAIN && s_lbl_tx) lv_label_set_text(s_lbl_tx, s_txbuf);
@@ -2471,9 +2472,12 @@ static void tick_cb(lv_timer_t *t) {
     // 并发播放的体检报告：供给间隔 / 重绘耗时 / 落盘耗时，每 AUDIO_STAT_MS 一行。
     // 改音效或音量之前先看这组数 —— 日志没告警不代表并发播放不出杂音，
     // 只有"供给间隔远小于 DMA 能撑的时长"才是真的安全。
+    // ★ 降成 D：这条是稳态下唯一一条"永远在刷"的日志（每 10 s 一行，一天八千多行），
+    //   而且要打 8 个参数，格式化开销是普通日志的好几倍。调音效时把它抬回 I 即可
+    //   （或把 CONFIG_LOG_MAXIMUM_LEVEL 设成 DEBUG），平时不该出现在串口上。
     if (s_stat_ms == 0) s_stat_ms = (uint32_t)now;
     else if ((uint32_t)now - s_stat_ms >= AUDIO_STAT_MS) {
-        ESP_LOGI(TAG, "音频体检: 供给间隔最大 %u ms · 存货放空 %u 次 · %u 块/10s · "
+        ESP_LOGD(TAG, "音频体检: 供给间隔最大 %u ms · 存货放空 %u 次 · %u 块/10s · "
                       "write 阻塞最大 %u ms · 让出最大 %u ms · 重绘最大 %u ms · 落盘最大 %u ms · 写失败 %u",
                  (unsigned)s_pcm_gap_ms_max, (unsigned)s_pcm_underrun, (unsigned)s_blocks,
                  (unsigned)s_write_ms_max, (unsigned)s_sleep_ms_max,
@@ -2551,6 +2555,15 @@ static void tick_cb(lv_timer_t *t) {
     }
     // 进度条与状态文字靠这一下往前走（只有正停在 FIRMWARE 页时才需要）
     if (s_scr == SCR_ADJ && s_sel == ADJ_FW) refresh_adj();
+
+    // ★ OTA 期间主屏停刷。实测：拿固件时如果主屏照常每 100 ms 重画一遍
+    //   （频谱 + 每一行文字都要重排），taskLVGL 会把 CPU 吃干 —— IDLE 任务喂不上
+    //   狗，task_wdt 每 5 s 就触发一次；同时 TLS 那边解密不过来，数据堆在 lwIP 里，
+    //   堆从四十几 KB 掉到十几 KB，最后 mbedtls 分配失败、Cloudflare 那边直接关连
+    //   （mbedtls_ssl_handshake -0x7280 = CONN_EOF）。症状看着像"服务器连不上"，
+    //   根子是 UI 在跟下载抢 CPU。
+    //   只有固件页那一下还要走（上面那行），别的白屏功课都缓一缓。
+    if (cw_ota_busy()) return;
 
     if (s_scr != SCR_MAIN) return;
     refresh_clock();                // 时钟自己走到分钟才动手，这里只负责给机会

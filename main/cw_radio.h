@@ -30,7 +30,7 @@
 //   21303，编进固件的还是 21306，设备一直连不上）。改完看 build/config/sdkconfig.h 复核。
 //   改完记得两条：① 重新 idf.py build；② 把 build/*.bin 发布到服务器的 /fw/ 下
 //   （tools/publish-fw.sh 会顺便更新 version.json）。
-#define CW_FW_VERSION "1.1.15"
+#define CW_FW_VERSION "1.1.18"
 
 void cw_radio_enter(void);
 void cw_radio_exit(void);
